@@ -49,20 +49,33 @@ while cap.isOpened():
         frame = cv2.resize(frame, (224, 224))
         batch_landmark, batch_visibility = net.predict_batch(np.array([frame]))
 
+        net_input_size = (config["model"]["im_width"], config["model"]["im_height"])
+        scale = np.divide(np.array([origin_frame.shape[1], origin_frame.shape[0]]), np.array(net_input_size))
+
         draw = origin_frame.copy()
 
         landmark = batch_landmark[0]
-        landmark = landmark.reshape((7, 2))
+        # landmark = landmark.reshape((7, 2))
 
-        unnomarlized_landmark = utils.unnormalize_landmark(landmark, (origin_frame.shape[1], origin_frame.shape[0]))
-        for i in range(len(unnomarlized_landmark)):
-            x = int(unnomarlized_landmark[i][0])
-            y = int(unnomarlized_landmark[i][1])
 
-            draw = cv2.putText(draw, str(i), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX,  
-                    0.5, (255, 255, 255), 1, cv2.LINE_AA)
-            cv2.circle(draw, (int(x), int(y)), 3, (0,0,255))
-        
+        # unnormalize_landmark = utils.unnormalize_landmark(landmark, (origin_frame.shape[1], origin_frame.shape[0]))
+        # for i in range(len(unnormalize_landmark)):
+        #     x = int(unnormalize_landmark[i][0])
+        #     y = int(unnormalize_landmark[i][1])
+
+        #     draw = cv2.putText(draw, str(i), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX,  
+        #             0.5, (255, 255, 255), 1, cv2.LINE_AA)
+        #     cv2.circle(draw, (int(x), int(y)), 3, (0,0,255))
+
+        for j in range(7):
+            x = landmark[2 * j]
+            y = landmark[2 * j + 1]
+            x, y = utils.unnormalize_landmark_point(
+                (x, y), net_input_size, scale=scale)
+            x = int(x)
+            y = int(y)
+            draw = cv2.circle(draw, (x, y), 2, (255, 0, 0), 2)
+
 
         cv2.imshow("Result", draw)
         if cv2.waitKey(1) & 0xFF == ord('q'):
