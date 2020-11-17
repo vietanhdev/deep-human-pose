@@ -26,17 +26,16 @@ with open(args.conf_file) as config_buffer:
     config = json.loads(config_buffer.read())
 
 # Prepare dataset
-train_dataset = datasets.DataSequence(config["train"]["train_data_folder"], batch_size=config["train"]["train_batch_size"], input_size=(
+train_dataset = datasets.DataSequence(config["train"]["train_data_folder"], config["train"]["train_labels"],  batch_size=config["train"]["train_batch_size"], input_size=(
     config["model"]["im_width"], config["model"]["im_height"]), shuffle=True, augment=True, random_flip=True)
-val_dataset = datasets.DataSequence(config["train"]["val_data_folder"], batch_size=config["train"]["val_batch_size"], input_size=(
+val_dataset = datasets.DataSequence(config["train"]["val_data_folder"], config["train"]["val_labels"], batch_size=config["train"]["val_batch_size"], input_size=(
     config["model"]["im_width"], config["model"]["im_height"]), shuffle=True, augment=True, random_flip=True)
-test_dataset = datasets.DataSequence(config["test"]["test_data_folder"], batch_size=config["test"]["test_batch_size"], input_size=(
+test_dataset = datasets.DataSequence(config["test"]["test_data_folder"], config["test"]["test_labels"], batch_size=config["test"]["test_batch_size"], input_size=(
     config["model"]["im_width"], config["model"]["im_height"]), shuffle=False, augment=False, random_flip=False)
 
 # Build model
 net = models.HeadPoseNet(config["model"]["im_width"], config["model"]
-                        ["im_height"], nb_bins=config["model"]["nb_bins"], learning_rate=config["train"]["learning_rate"], loss_weights=config["train"]["loss_weights_yaw_pitch_roll_landmark"],
-                        loss_angle_alpha=config["train"]["loss_angle_alpha"],
+                        ["im_height"], learning_rate=config["train"]["learning_rate"], loss_weights=config["train"]["loss_weights"],
                         backbond=config["model"]["backbond"])
 
 # Train model

@@ -15,23 +15,19 @@ import efficientnet.tfkeras as efn
 import pathlib
 
 class HeadPoseNet:
-    def __init__(self, im_width, im_height, nb_bins=66, learning_rate=0.001, loss_weights=[1,1,1,20000], loss_angle_alpha=0.5, backbond="SHUFFLE_NET_V2"):
+    def __init__(self, im_width, im_height, learning_rate=0.001, loss_weights=[1,1], backbond="SHUFFLE_NET_V2"):
         self.im_width = im_width
         self.im_height = im_height
-        self.class_num = nb_bins
         self.learning_rate = learning_rate
         self.loss_weights = loss_weights
-        self.loss_angle_alpha = loss_angle_alpha
         self.backbond = backbond
-        self.idx_tensor = [idx for idx in range(self.class_num)]
-        self.idx_tensor = tf.Variable(np.array(self.idx_tensor, dtype=np.float32))
         self.model = self.__create_model()
 
     def __create_model(self):
         inputs = tf.keras.layers.Input(shape=(self.im_height, self.im_width, 3))
 
         if self.backbond == "SHUFFLE_NET_V2":
-            feature = ShuffleNetv2(self.class_num)(inputs)
+            feature = ShuffleNetv2(66)(inputs)
             feature = tf.keras.layers.Flatten()(feature)
         elif self.backbond == "EFFICIENT_NET_B0":
             efn_backbond = efn.EfficientNetB0(weights='imagenet', include_top=False, input_shape=(self.im_height, self.im_width, 3))
@@ -44,10 +40,13 @@ class HeadPoseNet:
 
         fc_1_landmarks = tf.keras.layers.Dense(512, activation='relu', name='fc_landmarks')(feature)
         fc_2_landmarks = tf.keras.layers.Dense(14, name='landmarks')(fc_1_landmarks)
+
+        fc_1_visibility = tf.keras.layers.Dense(512, activation='relu', name='fc_visibility')(feature)
+        fc_2_visibility = tf.keras.layers.Dense(7, name='visibility')(fc_1_visibility)
     
-        model = tf.keras.Model(inputs=inputs, outputs=fc_2_landmarks)
+        model = tf.keras.Model(inputs=inputs, outputs=[fc_2_landmarks, fc_2_visibility])
         
-        losses = { 'landmarks':'mean_squared_error' }
+        losses = { 'landmarks':'mean_squared_error', 'visibility': 'binary_crossentropy'}
 
         model.compile(optimizer=tf.optimizers.Adam(self.learning_rate),
                         loss=losses, loss_weights=self.loss_weights)
@@ -77,7 +76,8 @@ class HeadPoseNet:
                                 validation_data=val_dataset,
                                 validation_steps=len(val_dataset),
                                 max_queue_size=64,
-                                workers=6,
+                                workers=1,
+                                use_multiprocessing=False,
                                 callbacks=[tb, mc],
                                 verbose=1)
             
