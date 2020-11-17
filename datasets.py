@@ -15,29 +15,30 @@ from augmentation import augment_img
 
 class DataSequence(Sequence):
 
-    def __init__(self, data_folder, batch_size=8, input_size=(128, 128), shuffle=True, augment=False, random_flip=True, normalize=True):
+    def __init__(self, image_folder, label_file, batch_size=8, input_size=(128, 128), shuffle=True, augment=False, random_flip=True, normalize=True):
         """
         Keras Sequence object to train a model on larger-than-memory data.
         """
 
         self.batch_size = batch_size
         self.input_size = input_size
-        self.image_files = self.__get_image_files(data_folder)
-        self.file_num = len(self.image_files)
-        self.data_folder = data_folder
+        self.image_folder = image_folder
         self.random_flip = random_flip
         self.augment = augment
         self.normalize = normalize
 
+        with open(label_file, "r") as fp:
+            self.data = json.load(fp)["labels"]
+
         if shuffle:
-            random.shuffle(self.image_files)
+            random.shuffle(self.data)
        
     def __len__(self):
         """
         Number of batch in the Sequence.
         :return: The number of batches in the Sequence.
         """
-        return int(math.ceil(len(self.image_files) / float(self.batch_size)))
+        return int(math.ceil(len(self.data) / float(self.batch_size)))
 
     def __getitem__(self, idx):
         """
@@ -46,55 +47,59 @@ class DataSequence(Sequence):
         :return: batches of image and the corresponding mask
         """
 
-        batch_image_files = self.image_files[idx * self.batch_size: (1 + idx) * self.batch_size]
+        batch_data = self.data[idx * self.batch_size: (1 + idx) * self.batch_size]
 
         batch_image = []
         batch_landmark = []
+        batch_visibility = []
 
-        for image_file in batch_image_files:
-            
-            # Read images and labels
-            label = self.__get_input_label(image_file.replace(".png", ".json"))
+        for data in batch_data:
             
             # Load image
             # Flip 50% of images
             flip = False
             if self.random_flip and random.random() < 0.5:
                 flip = True
-            image, label = self.__get_input_img(image_file, label=label,  augment=self.augment, flip=flip)
+        
+            image, landmark, visibility = self.load_data(self.image_folder, data, augment=self.augment, flip=flip)
 
 
             batch_image.append(image)
-            batch_landmark.append(label['landmark'])
+            batch_landmark.append(landmark)
+            batch_visibility.append(visibility)
 
         batch_image = np.array(batch_image)
         batch_landmark = np.array(batch_landmark)
         batch_landmark = batch_landmark.reshape(batch_landmark.shape[0], -1)
+        batch_visibility = np.array(batch_visibility)
 
-        return batch_image, batch_landmark
+        return batch_image, [batch_landmark, batch_visibility]
 
     def set_normalization(self, normalize):
         self.normalize = normalize
 
-    def __get_image_files(self, data_folder):
-        image_files = os.listdir(data_folder)
-        image_files = [os.path.join(data_folder, f) for f in image_files if f.lower().endswith(".jpg") or f.lower().endswith(".png")]
-        return image_files
+    def load_data(self, img_folder, data, augment=False, flip=False):
 
-    def __get_input_img(self, file_name, label, augment=False, flip=False):
+        landmark = data["points"]
+        visibility = data["is_visible"]
+        img = cv2.imread(os.path.join(img_folder, data["image"]))
+        landmark = utils.normalize_landmark(landmark, (img.shape[1], img.shape[0]))
+        img = cv2.resize(img, (self.input_size))
 
         if flip:
 
             # Flip landmark
-            label["landmark"] = np.multiply(label["landmark"], np.array([-1, 1]))
+            landmark = np.multiply(landmark, np.array([-1, 1]))
 
-            # Change the indices of landmark points
-            l = label["landmark"]
-            label["landmark"] = [l[6], l[5], l[4], l[3], l[2], l[1], l[0]]
+            # Change the indices of landmark points and visibility
+            l = landmark
+            v = visibility
+            landmark = [l[6], l[5], l[4], l[3], l[2], l[1], l[0]]
+            visibility = [v[6], v[5], v[4], v[3], v[2], v[1], v[0]]
 
-        unnomarlized_landmark = utils.unnormalize_landmark(label["landmark"], self.input_size)
-        img = cv2.imread(file_name)
-        img = cv2.resize(img, (self.input_size))
+
+        unnomarlized_landmark = utils.unnormalize_landmark(landmark, self.input_size)
+
 
         if flip:
             img = cv2.flip(img, 1)
@@ -102,14 +107,14 @@ class DataSequence(Sequence):
         if augment:
             img, unnomarlized_landmark = augment_img(img, unnomarlized_landmark)
 
-        label["landmark"] = utils.normalize_landmark(unnomarlized_landmark, self.input_size)
+        landmark = utils.normalize_landmark(unnomarlized_landmark, self.input_size)
 
         # Uncomment following lines to write out augmented images for debuging
         # cv2.imwrite("aug_" + str(random.randint(0, 50)) + ".png", img)
         # cv2.waitKey(0)
 
         # draw = img.copy()
-        # unnomarlized_landmark = utils.unnormalize_landmark(label["landmark"], self.input_size)
+        # unnomarlized_landmark = utils.unnormalize_landmark(landmark, self.input_size)
         # for i in range(len(unnomarlized_landmark)):
         #     x = int(unnomarlized_landmark[i][0])
         #     y = int(unnomarlized_landmark[i][1])
@@ -135,9 +140,4 @@ class DataSequence(Sequence):
             img[..., 1] /= std[1]
             img[..., 2] /= std[2]
 
-        return img, label
-
-    def __get_input_label(self, file_name):
-        with open(file_name) as json_file:
-            data = json.load(json_file)
-        return data
+        return img, landmark, visibility
