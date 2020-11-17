@@ -24,7 +24,7 @@
     },
 
     "test": {
-        "model_file" :                 "models/shufflenet_v2.h5",
+        "model_file" :                 "models/shufflenet_v2_ep027.h5",
         "test_data_folder":            "./data/mpii/processed_images/",
         "test_labels":                 "./data/mpii/test.json",
         "test_batch_size":             8
