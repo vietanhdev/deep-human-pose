@@ -88,10 +88,12 @@ class HeadPoseNet:
         total_samples = 0
 
         test_dataset.set_normalization(False)
-        for images, batch_landmark in test_dataset:
+        for images, labels in test_dataset:
+
+            batch_landmark = labels[0]
 
             start_time = time.time()
-            batch_landmark_pred = self.predict_batch(images, normalize=True)
+            batch_landmark_pred, _ = self.predict_batch(images, normalize=True)
             total_time += time.time() - start_time
             
             total_samples += np.array(images).shape[0]
