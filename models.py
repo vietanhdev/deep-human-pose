@@ -120,8 +120,8 @@ class HeadPoseNet:
             img_batch = self.normalize_img_batch(face_imgs)
         else:
             img_batch = np.array(face_imgs)
-        pred_landmark = self.model.predict(img_batch, batch_size=1, verbose=verbose)
-        return pred_landmark
+        pred_landmark, pred_visibility = self.model.predict(img_batch, batch_size=1, verbose=verbose)
+        return pred_landmark, pred_visibility
 
     def normalize_img_batch(self, face_imgs):
         image_batch = np.array(face_imgs, dtype=np.float32)
