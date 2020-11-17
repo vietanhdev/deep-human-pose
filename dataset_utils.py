@@ -37,9 +37,6 @@ def write_data_folder(examples, output_folder, image_size=(128,128)):
             # Write label
             label = {
                 'image': str(i) + '.png',
-                'roll': example['roll'],
-                'pitch': example['pitch'],
-                'yaw': example['yaw'],
                 'landmark': example['landmark']
             }
 

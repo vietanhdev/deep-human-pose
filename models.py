@@ -26,24 +26,6 @@ class HeadPoseNet:
         self.idx_tensor = [idx for idx in range(self.class_num)]
         self.idx_tensor = tf.Variable(np.array(self.idx_tensor, dtype=np.float32))
         self.model = self.__create_model()
-        
-    def __loss_angle(self, y_true, y_pred):
-        # Cross entropy loss
-        cont_true = y_true[:,0]
-        bin_true = y_true[:,1]
-
-        # CLS loss
-        onehot_labels = tf.one_hot(tf.cast(bin_true, tf.int32), 66)
-        onehot_labels = tf.cast(onehot_labels, tf.float32)
-        cls_loss = tf.compat.v1.losses.softmax_cross_entropy(onehot_labels=onehot_labels, logits=y_pred)
-
-        # MSE loss
-        pred_cont = tf.reduce_sum(input_tensor=tf.nn.softmax(y_pred) * self.idx_tensor, axis=1) * 3 - 99
-        mse_loss = tf.compat.v1.losses.mean_squared_error(labels=cont_true, predictions=pred_cont)
-
-        # Total loss
-        total_loss = cls_loss + self.loss_angle_alpha * mse_loss
-        return total_loss
 
     def __create_model(self):
         inputs = tf.keras.layers.Input(shape=(self.im_height, self.im_width, 3))
@@ -60,21 +42,12 @@ class HeadPoseNet:
         else:
             raise ValueError('No such arch!... Please check the backend in config file')
 
-        fc_yaw = tf.keras.layers.Dense(name='yaw', units=self.class_num)(feature)
-        fc_pitch = tf.keras.layers.Dense(name='pitch', units=self.class_num)(feature)
-        fc_roll = tf.keras.layers.Dense(name='roll', units=self.class_num)(feature)
-
         fc_1_landmarks = tf.keras.layers.Dense(512, activation='relu', name='fc_landmarks')(feature)
-        fc_2_landmarks = tf.keras.layers.Dense(10, name='landmarks')(fc_1_landmarks)
+        fc_2_landmarks = tf.keras.layers.Dense(14, name='landmarks')(fc_1_landmarks)
     
-        model = tf.keras.Model(inputs=inputs, outputs=[fc_yaw, fc_pitch, fc_roll, fc_2_landmarks])
+        model = tf.keras.Model(inputs=inputs, outputs=fc_2_landmarks)
         
-        losses = {
-            'yaw':self.__loss_angle,
-            'pitch':self.__loss_angle,
-            'roll':self.__loss_angle,
-            'landmarks':'mean_squared_error'
-        }
+        losses = { 'landmarks':'mean_squared_error' }
 
         model.compile(optimizer=tf.optimizers.Adam(self.learning_rate),
                         loss=losses, loss_weights=self.loss_weights)
@@ -109,43 +82,28 @@ class HeadPoseNet:
                                 verbose=1)
             
     def test(self, test_dataset, show_result=False):
-        yaw_error = .0
-        pitch_error = .0
-        roll_error = .0
         landmark_error = .0
         total_time = .0
         total_samples = 0
 
         test_dataset.set_normalization(False)
-        for images, [batch_yaw, batch_pitch, batch_roll, batch_landmark] in test_dataset:
+        for images, batch_landmark in test_dataset:
 
             start_time = time.time()
-            batch_yaw_pred, batch_pitch_pred, batch_roll_pred, batch_landmark_pred = self.predict_batch(images, normalize=True)
+            batch_landmark_pred = self.predict_batch(images, normalize=True)
             total_time += time.time() - start_time
             
             total_samples += np.array(images).shape[0]
-
-            batch_yaw = batch_yaw[:, 0]
-            batch_pitch = batch_pitch[:, 0]
-            batch_roll = batch_roll[:, 0]
     
             # Mean absolute error
-            yaw_error += np.sum(np.abs(batch_yaw - batch_yaw_pred))
-            pitch_error += np.sum(np.abs(batch_pitch - batch_pitch_pred))
-            roll_error += np.sum(np.abs(batch_roll - batch_roll_pred))
             landmark_error += np.sum(np.abs(batch_landmark - batch_landmark_pred))
 
             # Show result
             if show_result:
                 for i in range(images.shape[0]):
                     image = images[i]
-                    yaw = batch_yaw_pred[i]
-                    pitch = batch_pitch_pred[i]
-                    roll = batch_roll_pred[i]
                     landmark = batch_landmark_pred[i]
-
                     image = utils.draw_landmark(image, landmark)
-                    image = utils.plot_pose_cube(image, yaw, pitch, roll, tdx=image.shape[1] // 2, tdy=image.shape[0] // 2, size=80)
                     cv2.imshow("Test result", image)
                     cv2.waitKey(0)
         
@@ -153,11 +111,7 @@ class HeadPoseNet:
         avg_fps = 1.0 / avg_time
 
         print("### MAE: ")
-        print("- Yaw MAE: {}".format(yaw_error / total_samples))
-        print("- Pitch MAE: {}".format(pitch_error / total_samples))
-        print("- Roll MAE: {}".format(roll_error / total_samples))
-        print("- Head pose MAE: {}".format((yaw_error + pitch_error + roll_error) / total_samples / 3))
-        print("- Landmark MAE: {}".format(landmark_error / total_samples / 10))
+        print("- Landmark MAE: {}".format(landmark_error / total_samples / 14))
         print("- Avg. FPS: {}".format(avg_fps))
         
 
@@ -166,13 +120,8 @@ class HeadPoseNet:
             img_batch = self.normalize_img_batch(face_imgs)
         else:
             img_batch = np.array(face_imgs)
-        predictions = self.model.predict(img_batch, batch_size=1, verbose=verbose)
-        headpose_preds = np.array(predictions[:3], dtype=np.float32)
-        pred_cont_yaw = tf.reduce_sum(input_tensor=tf.nn.softmax(headpose_preds[0, :, :]) * self.idx_tensor, axis=1) * 3 - 99
-        pred_cont_pitch = tf.reduce_sum(input_tensor=tf.nn.softmax(headpose_preds[1, :, :]) * self.idx_tensor, axis=1) * 3 - 99
-        pred_cont_roll = tf.reduce_sum(input_tensor=tf.nn.softmax(headpose_preds[2, :, :]) * self.idx_tensor, axis=1) * 3 - 99
-        pred_landmark = predictions[3]
-        return pred_cont_yaw, pred_cont_pitch, pred_cont_roll, pred_landmark
+        pred_landmark = self.model.predict(img_batch, batch_size=1, verbose=verbose)
+        return pred_landmark
 
     def normalize_img_batch(self, face_imgs):
         image_batch = np.array(face_imgs, dtype=np.float32)
