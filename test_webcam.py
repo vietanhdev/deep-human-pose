@@ -1,5 +1,4 @@
 import argparse
-from RetinaFace.retinaface import RetinaFace
 import models
 import utils
 import datasets
@@ -43,16 +42,27 @@ if not cap.isOpened():
     exit(-1)
 
 while cap.isOpened():
-    ret, frame = cap.read()
+    ret, origin_frame = cap.read()
     if ret:
         # Convert crop image to RGB color space
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame = cv2.cvtColor(origin_frame, cv2.COLOR_BGR2RGB)
+        frame = cv2.resize(frame, (224, 224))
         batch_landmark, batch_visibility = net.predict_batch(np.array([frame]))
 
-        draw = frame.copy()
+        draw = origin_frame.copy()
 
         landmark = batch_landmark[0]
-        print(landmark)
+        landmark = landmark.reshape((7, 2))
+
+        unnomarlized_landmark = utils.unnormalize_landmark(landmark, (origin_frame.shape[1], origin_frame.shape[0]))
+        for i in range(len(unnomarlized_landmark)):
+            x = int(unnomarlized_landmark[i][0])
+            y = int(unnomarlized_landmark[i][1])
+
+            draw = cv2.putText(draw, str(i), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX,  
+                    0.5, (255, 255, 255), 1, cv2.LINE_AA)
+            cv2.circle(draw, (int(x), int(y)), 3, (0,0,255))
+        
 
         cv2.imshow("Result", draw)
         if cv2.waitKey(1) & 0xFF == ord('q'):

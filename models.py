@@ -12,6 +12,7 @@ from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStoppi
 from tensorflow.keras import callbacks
 from backbonds.shufflenetv2_backbond import *
 import efficientnet.tfkeras as efn 
+from tensorflow.keras import optimizers
 import pathlib
 
 class HeadPoseNet:
@@ -48,7 +49,7 @@ class HeadPoseNet:
         
         losses = { 'landmarks':'mean_squared_error', 'visibility': 'binary_crossentropy'}
 
-        model.compile(optimizer=tf.optimizers.Adam(self.learning_rate),
+        model.compile(optimizer=optimizers.Adam(self.learning_rate),
                         loss=losses, loss_weights=self.loss_weights)
        
         return model
