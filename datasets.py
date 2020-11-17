@@ -49,9 +49,6 @@ class DataSequence(Sequence):
         batch_image_files = self.image_files[idx * self.batch_size: (1 + idx) * self.batch_size]
 
         batch_image = []
-        batch_yaw = []
-        batch_pitch = []
-        batch_roll = []
         batch_landmark = []
 
         for image_file in batch_image_files:
@@ -66,28 +63,15 @@ class DataSequence(Sequence):
                 flip = True
             image, label = self.__get_input_img(image_file, label=label,  augment=self.augment, flip=flip)
 
-            # Add binned value for head pose
-            bins = list(range(-99, 99, 3))
-            binned_labels = np.digitize(
-                [label['yaw'],  label['pitch'],  label['roll']], bins) - 1
-            yaw = [label['yaw'], binned_labels[0]]
-            pitch = [label['pitch'], binned_labels[1]]
-            roll = [label['roll'], binned_labels[2]]
 
             batch_image.append(image)
-            batch_yaw.append(yaw)
-            batch_pitch.append(pitch)
-            batch_roll.append(roll)
             batch_landmark.append(label['landmark'])
 
         batch_image = np.array(batch_image)
         batch_landmark = np.array(batch_landmark)
         batch_landmark = batch_landmark.reshape(batch_landmark.shape[0], -1)
-        batch_yaw = np.array(batch_yaw)
-        batch_pitch = np.array(batch_pitch)
-        batch_roll = np.array(batch_roll)
 
-        return batch_image, [batch_yaw, batch_pitch, batch_roll, batch_landmark]
+        return batch_image, batch_landmark
 
     def set_normalization(self, normalize):
         self.normalize = normalize
@@ -100,16 +84,13 @@ class DataSequence(Sequence):
     def __get_input_img(self, file_name, label, augment=False, flip=False):
 
         if flip:
-            # Flip head pose
-            label['yaw'] = -label['yaw']
-            label['roll'] = -label['roll']
 
             # Flip landmark
             label["landmark"] = np.multiply(label["landmark"], np.array([-1, 1]))
 
             # Change the indices of landmark points
             l = label["landmark"]
-            label["landmark"] = [l[1], l[0], l[2], l[4], l[3]]
+            label["landmark"] = [l[6], l[5], l[4], l[3], l[2], l[1], l[0]]
 
         unnomarlized_landmark = utils.unnormalize_landmark(label["landmark"], self.input_size)
         img = cv2.imread(file_name)
@@ -153,6 +134,7 @@ class DataSequence(Sequence):
             img[..., 0] /= std[0]
             img[..., 1] /= std[1]
             img[..., 2] /= std[2]
+
         return img, label
 
     def __get_input_label(self, file_name):
