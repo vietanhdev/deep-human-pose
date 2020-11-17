@@ -30,12 +30,12 @@ with open(args.conf_file) as config_buffer:
     config = json.loads(config_buffer.read())
 
 # Prepare dataset
-test_dataset = datasets.DataSequence(config["test"]["test_data_folder"], batch_size=config["test"]["test_batch_size"], input_size=(
+test_dataset = datasets.DataSequence(config["test"]["test_data_folder"], config["test"]["test_labels"], batch_size=config["test"]["test_batch_size"], input_size=(
     config["model"]["im_width"], config["model"]["im_height"]), shuffle=False, augment=False, random_flip=False)
 
 # Build model
 net = models.HeadPoseNet(config["model"]["im_width"], config["model"]
-                         ["im_height"], nb_bins=config["model"]["nb_bins"],
+                         ["im_height"],
                          learning_rate=config["train"]["learning_rate"],
                          backbond=config["model"]["backbond"])
 
