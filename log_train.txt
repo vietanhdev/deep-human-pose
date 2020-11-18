@@ -1,0 +1,10 @@
+Split MPII
+- chỉ lọc frame có 1 người
+train 6497
+val 812
+test 813
+
+Split finetune
+train 1120
+val 280
+

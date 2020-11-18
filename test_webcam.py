@@ -36,7 +36,7 @@ net = models.HeadPoseNet(config["model"]["im_width"], config["model"]
 # Load model
 net.load_weights(config["test"]["model_file"])
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture("/mnt/DATA/PUSHUP_PROJECT/processed/532.mp4")
 if not cap.isOpened():
     print("Unable to connect to camera.")
     exit(-1)

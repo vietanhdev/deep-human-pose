@@ -19,7 +19,7 @@
         "load_weights":                 false,
         "pretrained_weights_path":      "models/model_to_load.h5",
         "logs_dir" :                    "logs_e3",
-        "learning_rate":                1e-5,
+        "learning_rate":                1e-7s,
         "loss_weights":                 [1, 0.001]
     },
 
