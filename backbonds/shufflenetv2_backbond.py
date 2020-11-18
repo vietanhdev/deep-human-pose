@@ -134,10 +134,8 @@ class ShufflenetStage(tf.keras.Model):
 
 class ShuffleNetv2(tf.keras.Model):
     """Shufflenetv2"""
-    def __init__(self, num_classes, first_channel=24, channels_per_stage=(116, 232, 464)):
+    def __init__(self, first_channel=24, channels_per_stage=(116, 232, 464)):
         super(ShuffleNetv2, self).__init__()
-
-        self.num_classes = num_classes
 
         self.conv1_bn_relu = Conv2D_BN_ReLU(first_channel, 3, 2)
         self.pool1 = MaxPool2D(3, strides=2, padding="SAME")

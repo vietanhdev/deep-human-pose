@@ -1,6 +1,6 @@
 {
     "model" : {
-        "backbond":                    "SHUFFLE_NET_V2",
+        "backbond":                    "EFFICIENT_NET_B3",
         "im_width":                    224,
         "im_height":                   224
     },
@@ -12,19 +12,19 @@
         "val_labels":                   "./data/mpii/val.json",
         "train_batch_size":             16,
         "val_batch_size":               8,
-        "nb_epochs":                    100,
+        "nb_epochs":                    150,
         "debug":                        true,
         "model_folder" :                "./models/",
-        "model_base_name":              "shufflenet_v2",
+        "model_base_name":              "efficientb3",
         "load_weights":                 false,
         "pretrained_weights_path":      "models/model_to_load.h5",
-        "logs_dir" :                    "logs",
+        "logs_dir" :                    "logs_e3",
         "learning_rate":                1e-5,
         "loss_weights":                 [1, 0.001]
     },
 
     "test": {
-        "model_file" :                 "models/shufflenet_v2_ep027.h5",
+        "model_file" :                 "models/efficientb3_ep100.h5",
         "test_data_folder":            "./data/mpii/processed_images/",
         "test_labels":                 "./data/mpii/test.json",
         "test_batch_size":             8

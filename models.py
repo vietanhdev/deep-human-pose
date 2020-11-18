@@ -28,10 +28,22 @@ class HeadPoseNet:
         inputs = tf.keras.layers.Input(shape=(self.im_height, self.im_width, 3))
 
         if self.backbond == "SHUFFLE_NET_V2":
-            feature = ShuffleNetv2(66)(inputs)
+            feature = ShuffleNetv2()(inputs)
             feature = tf.keras.layers.Flatten()(feature)
         elif self.backbond == "EFFICIENT_NET_B0":
             efn_backbond = efn.EfficientNetB0(weights='imagenet', include_top=False, input_shape=(self.im_height, self.im_width, 3))
+            efn_backbond.trainable = False
+            feature = efn_backbond(inputs)
+            feature = tf.keras.layers.Flatten()(feature)
+            feature = tf.keras.layers.Dense(1024, activation='relu')(feature)
+        elif self.backbond == "EFFICIENT_NET_B3":
+            efn_backbond = efn.EfficientNetB3(weights='imagenet', include_top=False, input_shape=(self.im_height, self.im_width, 3))
+            efn_backbond.trainable = False
+            feature = efn_backbond(inputs)
+            feature = tf.keras.layers.Flatten()(feature)
+            feature = tf.keras.layers.Dense(1024, activation='relu')(feature)
+        elif self.backbond == "EFFICIENT_NET_B4":
+            efn_backbond = efn.EfficientNetB4(weights='imagenet', include_top=False, input_shape=(self.im_height, self.im_width, 3))
             efn_backbond.trainable = False
             feature = efn_backbond(inputs)
             feature = tf.keras.layers.Flatten()(feature)
@@ -43,7 +55,7 @@ class HeadPoseNet:
         fc_2_landmarks = tf.keras.layers.Dense(14, name='landmarks')(fc_1_landmarks)
 
         fc_1_visibility = tf.keras.layers.Dense(512, activation='relu', name='fc_visibility')(feature)
-        fc_2_visibility = tf.keras.layers.Dense(7, name='visibility')(fc_1_visibility)
+        fc_2_visibility = tf.keras.layers.Dense(7, name='visibility', activation="sigmoid")(fc_1_visibility)
     
         model = tf.keras.Model(inputs=inputs, outputs=[fc_2_landmarks, fc_2_visibility])
         
@@ -76,9 +88,9 @@ class HeadPoseNet:
                                 steps_per_epoch=len(train_dataset),
                                 validation_data=val_dataset,
                                 validation_steps=len(val_dataset),
-                                max_queue_size=64,
-                                workers=1,
-                                use_multiprocessing=False,
+                                # max_queue_size=64,
+                                # workers=6,
+                                use_multiprocessing=True,
                                 callbacks=[tb, mc],
                                 verbose=1)
             

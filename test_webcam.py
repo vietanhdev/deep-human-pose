@@ -46,6 +46,7 @@ while cap.isOpened():
     if ret:
         # Convert crop image to RGB color space
         frame = cv2.cvtColor(origin_frame, cv2.COLOR_BGR2RGB)
+        # frame = cv2.imread("/mnt/DATA/PUSHUP_PROJECT/deep-human-pose/data/mpii/processed_images/0.png")
         frame = cv2.resize(frame, (224, 224))
         batch_landmark, batch_visibility = net.predict_batch(np.array([frame]))
 
