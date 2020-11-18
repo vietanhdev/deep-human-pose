@@ -1,12 +1,23 @@
-Split MPII
-- chỉ lọc frame có 1 người
+DATA từ tập MPII
+- chỉ lấy frame có 1 người.
+Shuffle và chia
 train 6497
 val 812
 test 813
 
-Split finetune
-train 1120
-val 280
+DATA cắt từ video
+Không shuffle để đảm bảo hạn chế tối đa việc dùng 2 images từ dùng 1 video cho 2 tập khác nhau
+train 4141
+val 518
+test 518
+
+no person
+Shuffle và chia
+train 1725
+val 216
+test 216
+
+
 
 
 

@@ -36,7 +36,7 @@ net = models.HeadPoseNet(config["model"]["im_width"], config["model"]
 # Load model
 net.load_weights(config["test"]["model_file"])
 
-cap = cv2.VideoCapture("/mnt/DATA/PUSHUP_PROJECT/processed/532.mp4")
+cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     print("Unable to connect to camera.")
     exit(-1)
@@ -68,7 +68,7 @@ while cap.isOpened():
             y = int(y)
             draw = cv2.circle(draw, (x, y), 2, (255, 0, 0), 2)
             cv2.putText(draw, 'Pushing:{}, Person:{}'.format(is_pushing_up, contains_person), (100, 100), cv2.FONT_HERSHEY_SIMPLEX ,  
-                   1, (0, 0, 255), 1, cv2.LINE_AA) 
+                   0.5, (0, 0, 255), 1, cv2.LINE_AA) 
 
 
         cv2.imshow("Result", draw)

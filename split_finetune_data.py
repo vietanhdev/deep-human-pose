@@ -8,8 +8,10 @@ def write_label(data, file_path):
     with open(file_path, 'w') as outfile:
         json.dump(data, outfile)
 
-random.seed(42)
-random.shuffle(data)
+# Dont shuffle finetune data to prevent split images from same video
+# random.seed(42)
+# random.shuffle(data)
+
 t1 = int(0.8*len(data))
 t2 = int(0.9*len(data))
 

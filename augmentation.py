@@ -18,37 +18,38 @@ def load_aug():
 			iaa.SomeOf((0, 5),
 				[
 					iaa.CropAndPad(
-						percent=(-0.2, 0.2),
+						percent=(-0.1, 0.1),
 						pad_mode=ia.ALL,
 						pad_cval=(0, 255)
 					),
 					iaa.Crop(
-						percent=0.25,
+						percent=0.1,
 						keep_size=True
 					),
 					iaa.OneOf([
-						iaa.GaussianBlur((0, 0.2)), # blur images with a sigma between 0 and 2.0
-						iaa.AverageBlur(k=(2, 3)), # blur image using local means
-						iaa.MedianBlur(k=(1, 3)), # blur image using local medians
+						iaa.GaussianBlur((0, 0.1)),
+						iaa.AverageBlur(k=(2, 3)),
+						iaa.MedianBlur(k=(1, 3)),
+						iaa.Sharpen(alpha=(0, 0.2), lightness=(0.75, 1.5)), # sharpen images
+						iaa.Emboss(alpha=(0, 0.2), strength=(0, 0.25)), # emboss images
+						# search either for all edges or for directed edges,
+						iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01*255), per_channel=0.5), # add gaussian noise to images
+						iaa.AddToHueAndSaturation((-10, 10)), # change hue and saturation
+						# either change the brightness of the whole image (sometimes
+						# per channel) or change the brightness of subareas
 					]),
-					iaa.Sharpen(alpha=(0, 0.5), lightness=(0.75, 1.5)), # sharpen images
-					iaa.Emboss(alpha=(0, 0.5), strength=(0, 0.5)), # emboss images
-					# search either for all edges or for directed edges,
-					iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05*255), per_channel=0.5), # add gaussian noise to images
-					iaa.Add((-10, 10), per_channel=0.5), # change brightness of images (by -10 to 10 of original value)
-					iaa.AddToHueAndSaturation((-10, 10)), # change hue and saturation
-					# either change the brightness of the whole image (sometimes
-					# per channel) or change the brightness of subareas
-					iaa.contrast.LinearContrast((0.5, 2.0), per_channel=0.5), # improve or worsen the contrast
-					iaa.Grayscale(alpha=(0.0, 0.5)),
-					iaa.AdditiveLaplaceNoise(scale=0.05*255),
-					iaa.AdditivePoissonNoise(lam=2),
-					iaa.Multiply(mul=(0.5, 1.5)),
-					iaa.Dropout(p=(0.1, 0.2)),
-					iaa.CoarseDropout(p=0.1, size_percent=0.05),
+					iaa.OneOf([
+						iaa.contrast.LinearContrast((0.5, 2.0), per_channel=0.1), # improve or worsen the contrast
+						iaa.Grayscale(alpha=(0.0, 0.1)),
+						iaa.AdditiveLaplaceNoise(scale=0.01*255),
+						iaa.AdditivePoissonNoise(lam=2),
+						iaa.Multiply(mul=(0.9, 1.1)),
+						iaa.Dropout(p=(0.1, 0.2)),
+						iaa.CoarseDropout(p=0.1, size_percent=0.05),
+						iaa.LinearContrast(),
+						iaa.AveragePooling(2)
+					]),
 					iaa.MotionBlur(k=3),
-					iaa.LinearContrast(),
-					iaa.AveragePooling(2)
 				],
 				random_order=True
 			)

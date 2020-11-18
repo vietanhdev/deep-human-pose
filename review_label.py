@@ -38,10 +38,16 @@ for ii, label in enumerate(data):
     if video is None:
         print("Error reading video")
         exit(0)
+
+    if label["_id"] in [4797, 4796]:
+        continue
+
     label = json.loads(label["content"])["label"]
     frame_id = int(label["frame_id"])
     points = label["points"]
     if len(points) != 7:
+        continue
+    if np.any(np.array(points) == -1):
         continue
 
     # for i in range(frame_id):
