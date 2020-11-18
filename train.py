@@ -13,6 +13,7 @@ import tensorflow as tf
 for gpu in tf.config.experimental.list_physical_devices('GPU'):
     tf.compat.v2.config.experimental.set_memory_growth(gpu, True)
 
+# tf.compat.v1.disable_eager_execution()
 
 parser = argparse.ArgumentParser()
 parser.add_argument(

@@ -73,8 +73,8 @@ class DataSequence(Sequence):
         batch_image = np.array(batch_image)
         batch_landmark = np.array(batch_landmark)
         batch_landmark = batch_landmark.reshape(batch_landmark.shape[0], -1)
-        batch_is_pushing_up = np.array(batch_is_pushing_up)
-        batch_contains_person = np.array(batch_contains_person)
+        batch_is_pushing_up = np.array(batch_is_pushing_up).astype(int)
+        batch_contains_person = np.array(batch_contains_person).astype(int)
 
         return batch_image, [batch_landmark, batch_is_pushing_up, batch_contains_person]
 
@@ -86,7 +86,9 @@ class DataSequence(Sequence):
         landmark = data["points"]
         is_pushing_up = data["is_pushing_up"]
         contains_person = data["contains_person"]
-        img = cv2.imread(os.path.join(img_folder, data["image"]))
+        path = os.path.join(img_folder, data["image"])
+        # print(path)
+        img = cv2.imread(path)
         landmark = utils.normalize_landmark(landmark, (img.shape[1], img.shape[0]))
         img = cv2.resize(img, (self.input_size))
 

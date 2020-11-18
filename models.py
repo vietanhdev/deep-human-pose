@@ -61,9 +61,14 @@ class HeadPoseNet:
         fc_1_contains_person = tf.keras.layers.Dense(256, activation='relu', name='fc_contains_person')(feature)
         fc_2_contains_person = tf.keras.layers.Dense(1, name='contains_person', activation="sigmoid")(fc_1_contains_person)
     
-        model = tf.keras.Model(inputs=inputs, outputs=[fc_2_landmarks, fc_2_visibility])
+        model = tf.keras.Model(inputs=inputs, outputs=[fc_2_landmarks, fc_2_is_pushing_up, fc_2_contains_person])
         
-        losses = { 'landmarks':'mean_squared_error', 'is_pushing_up': 'binary_crossentropy', 'contains_person': 'binary_crossentropy'}
+        def landmark_loss():
+            def landmark_loss_func(y_true, y_pred):
+                lm_loss = tf.keras.backend.switch(tf.keras.backend.argmax(y_true) != -1, tf.keras.losses.MSE(y_true, y_pred), 0)
+                return lm_loss
+            return landmark_loss_func
+        losses = { 'landmarks': landmark_loss(), 'is_pushing_up': 'binary_crossentropy', 'contains_person': 'binary_crossentropy'}
 
         model.compile(optimizer=optimizers.Adam(self.learning_rate),
                         loss=losses, loss_weights=self.loss_weights)
@@ -94,7 +99,7 @@ class HeadPoseNet:
                                 validation_steps=len(val_dataset),
                                 # max_queue_size=64,
                                 # workers=6,
-                                use_multiprocessing=True,
+                                # use_multiprocessing=True,
                                 callbacks=[tb, mc],
                                 verbose=1)
             

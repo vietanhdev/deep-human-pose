@@ -6,10 +6,10 @@
     },
 
     "train": {
-        "train_data_folder":            "./data/mpii/processed_images/",
-        "val_data_folder":              "./data/mpii/processed_images/",
-        "train_labels":                 "./data/mpii/train.json",
-        "val_labels":                   "./data/mpii/val.json",
+        "train_data_folder":            "./data/3heads/images/",
+        "val_data_folder":              "./data/3heads/images/",
+        "train_labels":                 "./data/3heads/train.json",
+        "val_labels":                   "./data/3heads/val.json",
         "train_batch_size":             16,
         "val_batch_size":               8,
         "nb_epochs":                    150,
@@ -25,8 +25,8 @@
 
     "test": {
         "model_file" :                 "",
-        "test_data_folder":            "./data/mpii/processed_images/",
-        "test_labels":                 "./data/mpii/test.json",
+        "test_data_folder":            "./data/3heads/images/",
+        "test_labels":                 "./data/3heads/test.json",
         "test_batch_size":             8
     }
 }
