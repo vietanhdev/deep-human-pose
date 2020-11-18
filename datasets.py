@@ -51,7 +51,8 @@ class DataSequence(Sequence):
 
         batch_image = []
         batch_landmark = []
-        batch_visibility = []
+        batch_is_pushing_up = []
+        batch_contains_person = []
 
         for data in batch_data:
             
@@ -61,19 +62,21 @@ class DataSequence(Sequence):
             if self.random_flip and random.random() < 0.5:
                 flip = True
         
-            image, landmark, visibility = self.load_data(self.image_folder, data, augment=self.augment, flip=flip)
+            image, landmark, is_pushing_up, contains_person = self.load_data(self.image_folder, data, augment=self.augment, flip=flip)
 
 
             batch_image.append(image)
             batch_landmark.append(landmark)
-            batch_visibility.append(visibility)
+            batch_is_pushing_up.append(is_pushing_up)
+            batch_contains_person.append(contains_person)
 
         batch_image = np.array(batch_image)
         batch_landmark = np.array(batch_landmark)
         batch_landmark = batch_landmark.reshape(batch_landmark.shape[0], -1)
-        batch_visibility = np.array(batch_visibility)
+        batch_is_pushing_up = np.array(batch_is_pushing_up)
+        batch_contains_person = np.array(batch_contains_person)
 
-        return batch_image, [batch_landmark, batch_visibility]
+        return batch_image, [batch_landmark, batch_is_pushing_up, batch_contains_person]
 
     def set_normalization(self, normalize):
         self.normalize = normalize
@@ -81,7 +84,8 @@ class DataSequence(Sequence):
     def load_data(self, img_folder, data, augment=False, flip=False):
 
         landmark = data["points"]
-        visibility = data["is_visible"]
+        is_pushing_up = data["is_pushing_up"]
+        contains_person = data["contains_person"]
         img = cv2.imread(os.path.join(img_folder, data["image"]))
         landmark = utils.normalize_landmark(landmark, (img.shape[1], img.shape[0]))
         img = cv2.resize(img, (self.input_size))
@@ -93,9 +97,7 @@ class DataSequence(Sequence):
 
             # Change the indices of landmark points and visibility
             l = landmark
-            v = visibility
             landmark = [l[6], l[5], l[4], l[3], l[2], l[1], l[0]]
-            visibility = [v[6], v[5], v[4], v[3], v[2], v[1], v[0]]
 
 
         unnomarlized_landmark = utils.unnormalize_landmark(landmark, self.input_size)
@@ -140,4 +142,4 @@ class DataSequence(Sequence):
             img[..., 1] /= std[1]
             img[..., 2] /= std[2]
 
-        return img, landmark, visibility
+        return img, landmark, is_pushing_up, contains_person

@@ -14,6 +14,7 @@ from backbonds.shufflenetv2_backbond import *
 import efficientnet.tfkeras as efn 
 from tensorflow.keras import optimizers
 import pathlib
+from sklearn.metrics import precision_recall_fscore_support
 
 class HeadPoseNet:
     def __init__(self, im_width, im_height, learning_rate=0.001, loss_weights=[1,1], backbond="SHUFFLE_NET_V2"):
@@ -51,15 +52,18 @@ class HeadPoseNet:
         else:
             raise ValueError('No such arch!... Please check the backend in config file')
 
-        fc_1_landmarks = tf.keras.layers.Dense(512, activation='relu', name='fc_landmarks')(feature)
+        fc_1_landmarks = tf.keras.layers.Dense(256, activation='relu', name='fc_landmarks')(feature)
         fc_2_landmarks = tf.keras.layers.Dense(14, name='landmarks')(fc_1_landmarks)
 
-        fc_1_visibility = tf.keras.layers.Dense(512, activation='relu', name='fc_visibility')(feature)
-        fc_2_visibility = tf.keras.layers.Dense(7, name='visibility', activation="sigmoid")(fc_1_visibility)
+        fc_1_is_pushing_up = tf.keras.layers.Dense(256, activation='relu', name='fc_is_pushing_up')(feature)
+        fc_2_is_pushing_up = tf.keras.layers.Dense(1, name='is_pushing_up', activation="sigmoid")(fc_1_is_pushing_up)
+
+        fc_1_contains_person = tf.keras.layers.Dense(256, activation='relu', name='fc_contains_person')(feature)
+        fc_2_contains_person = tf.keras.layers.Dense(1, name='contains_person', activation="sigmoid")(fc_1_contains_person)
     
         model = tf.keras.Model(inputs=inputs, outputs=[fc_2_landmarks, fc_2_visibility])
         
-        losses = { 'landmarks':'mean_squared_error', 'visibility': 'binary_crossentropy'}
+        losses = { 'landmarks':'mean_squared_error', 'is_pushing_up': 'binary_crossentropy', 'contains_person': 'binary_crossentropy'}
 
         model.compile(optimizer=optimizers.Adam(self.learning_rate),
                         loss=losses, loss_weights=self.loss_weights)
@@ -100,13 +104,26 @@ class HeadPoseNet:
         total_samples = 0
 
         test_dataset.set_normalization(False)
+        total_landmark = []
+        total_is_pushing_up = []
+        total_contains_person = []
+        total_landmark_pred = []
+        total_is_pushing_up_pred = []
+        total_contains_person_pred = []
         for images, labels in test_dataset:
 
-            batch_landmark = labels[0]
+            batch_landmark, batch_is_pushing_up, batch_contains_person = labels
+            total_landmark += batch_landmark.tolist()
+            total_is_pushing_up += batch_is_pushing_up.tolist()
+            total_contains_person += batch_contains_person.tolist()
 
             start_time = time.time()
-            batch_landmark_pred, _ = self.predict_batch(images, normalize=True)
+            batch_landmark_pred, batch_is_pushing_up_pred, batch_contains_person_pred = self.predict_batch(images, normalize=True)
             total_time += time.time() - start_time
+
+            total_landmark_pred += batch_landmark_pred.tolist()
+            total_is_pushing_up_pred += batch_is_pushing_up_pred.tolist()
+            total_contains_person_pred += batch_contains_person_pred.tolist()
             
             total_samples += np.array(images).shape[0]
     
@@ -127,6 +144,8 @@ class HeadPoseNet:
 
         print("### MAE: ")
         print("- Landmark MAE: {}".format(landmark_error / total_samples / 14))
+        print("- Pushing up: ", precision_recall_fscore_support(total_is_pushing_up, total_is_pushing_up_pred, average='macro'))
+        print("- Contains person: ", precision_recall_fscore_support(total_contains_person, total_contains_person_pred, average='macro'))
         print("- Avg. FPS: {}".format(avg_fps))
         
 
@@ -135,8 +154,8 @@ class HeadPoseNet:
             img_batch = self.normalize_img_batch(face_imgs)
         else:
             img_batch = np.array(face_imgs)
-        pred_landmark, pred_visibility = self.model.predict(img_batch, batch_size=1, verbose=verbose)
-        return pred_landmark, pred_visibility
+        pred_landmark, pred_is_pushing_up, pred_contains_person = self.model.predict(img_batch, batch_size=1, verbose=verbose)
+        return pred_landmark, pred_is_pushing_up, pred_contains_person
 
     def normalize_img_batch(self, face_imgs):
         image_batch = np.array(face_imgs, dtype=np.float32)
