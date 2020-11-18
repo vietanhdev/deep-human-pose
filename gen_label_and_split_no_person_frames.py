@@ -1,4 +1,6 @@
 import os
+import json
+import random
 
 # os.system("mkdir -p data/no_person/images")
 image_folder = "data/no_person/images"
@@ -6,6 +8,8 @@ image_folder = "data/no_person/images"
 data = []
 images = os.listdir(image_folder)
 for image in images:
+    if not image.endswith("png"):
+        continue
     label = {}
     label["points"] = [[-1, -1],[-1, -1],[-1, -1],[-1, -1],[-1, -1],[-1, -1],[-1, -1]]
     label["is_pushing_up"] = False
