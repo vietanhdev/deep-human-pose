@@ -128,3 +128,5 @@ dmypy.json
 
 /videos
 /labels.json
+/efficientb3_*
+/efficientb4_*

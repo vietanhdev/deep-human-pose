@@ -14,17 +14,17 @@
         "val_batch_size":               8,
         "nb_epochs":                    150,
         "debug":                        true,
-        "model_folder" :                "./efficientb3_3head/",
-        "model_base_name":              "efficientb3_3head",
+        "model_folder" :                "./efficientb3_3head_2/",
+        "model_base_name":              "efficientb3_3head_2",
         "load_weights":                 false,
         "pretrained_weights_path":      "models/model_to_load.h5",
-        "logs_dir" :                    "logs_e3_3head",
+        "logs_dir" :                    "logs_e3_3head_2",
         "learning_rate":                1e-6,
         "loss_weights":                 [1, 0.5, 0.5]
     },
 
     "test": {
-        "model_file" :                 "/mnt/DATA/PUSHUP_PROJECT/deep-human-pose/efficientb3_3head/efficientb3_3head_ep037.h5",
+        "model_file" :                 "",
         "test_data_folder":            "./data/3heads/images/",
         "test_labels":                 "./data/3heads/test.json",
         "test_batch_size":             8

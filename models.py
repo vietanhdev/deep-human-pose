@@ -65,7 +65,11 @@ class HeadPoseNet:
         
         def landmark_loss():
             def landmark_loss_func(y_true, y_pred):
-                lm_loss = tf.keras.backend.switch(tf.keras.backend.argmax(y_true) != -1, tf.keras.losses.MSE(y_true, y_pred), 0)
+                lm_loss = tf.keras.backend.switch(
+                    tf.keras.backend.max(y_pred) == -1.0 and tf.keras.backend.min(y_pred) == -1.0,
+                    0.0,
+                    tf.keras.losses.MSE(y_true, y_pred)
+                )
                 return lm_loss
             return landmark_loss_func
         losses = { 'landmarks': landmark_loss(), 'is_pushing_up': 'binary_crossentropy', 'contains_person': 'binary_crossentropy'}

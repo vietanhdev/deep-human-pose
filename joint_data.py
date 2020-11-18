@@ -17,19 +17,23 @@ def join_files(input_files, output_file):
 join_files([
     "data/finetune/train.json",
     "data/mpii/train.json",
+    "data/no_person/train.json",
 ], "data/3heads/train.json")
 
 join_files([
     "data/finetune/val.json",
     "data/mpii/val.json",
+    "data/no_person/val.json",
 ], "data/3heads/val.json")
 
 join_files([
-    # "data/finetune/test.json",
+    "data/finetune/test.json",
     "data/mpii/test.json",
+    "data/no_person/test.json",
 ], "data/3heads/test.json")
 
 
 os.system("mkdir -p data/3heads/images")
 os.system("cp -r data/finetune/images/* data/3heads/images/")
 os.system("cp -r data/mpii/processed_images/* data/3heads/images/")
+os.system("cp -r data/no_person/images/* data/3heads/images/")
