@@ -125,3 +125,6 @@ dmypy.json
 
 # Trained models
 /trained
+
+/videos
+/labels.json
