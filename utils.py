@@ -63,9 +63,6 @@ def crop_loosely(shape, img, input_size, landmark=None):
     bbox, scale_x, scale_y = get_loosen_bbox(shape, img, input_size)
     crop_face = img[bbox[1]:bbox[3], bbox[0]:bbox[2]]
     crop_face = cv2.resize(crop_face, input_size)
-
-    
-
     return crop_face
 
 def get_loosen_bbox(shape, img, input_size):

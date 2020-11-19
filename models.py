@@ -71,13 +71,28 @@ class HeadPoseNet:
         fc_2_contains_person = tf.keras.layers.Dense(1, name='contains_person', activation="sigmoid")(fc_1_contains_person)
     
         model = tf.keras.Model(inputs=inputs, outputs=[fc_2_landmarks, fc_2_is_pushing_up, fc_2_contains_person])
-        
-        def landmark_loss():
-            def landmark_loss_func(y_true, y_pred):
+
+        def landmark_loss(lamda = 10):
+            def landmark_loss_func(target, pred):
+                esp = 1e-5
+                coor_x_t = target[:][:,::2]
+                coor_y_t = target[:,1:][:,::2]
+                coor_x_p = pred[:][:,::2]
+                coor_y_p = pred[:,1:][:,::2]
+                ra1_t = tf.math.atan2((coor_y_t[:,1] - coor_y_t[:,0]), (coor_x_t[:,1] - coor_x_t[:,0] + 1e-5))
+                ra1_p = tf.math.atan2((coor_y_p[:,1] - coor_y_p[:,0]), (coor_x_p[:,1] - coor_x_p[:,0] + 1e-5))
+                ra2_t = tf.math.atan2((coor_y_t[:,2] - coor_y_t[:,1]), (coor_x_t[:,2] - coor_x_t[:,1] + 1e-5))
+                ra2_p = tf.math.atan2((coor_y_p[:,2] - coor_y_p[:,1]), (coor_x_p[:,2] - coor_x_p[:,1] + 1e-5))
+                la1_t = tf.math.atan2((coor_y_t[:,-2] - coor_y_t[:,-1]), (coor_x_t[:,-2] - coor_x_t[:,-1] + 1e-5))
+                la1_p = tf.math.atan2((coor_y_p[:,-2] - coor_y_p[:,-1]), (coor_x_p[:,-2] - coor_x_p[:,-1] + 1e-5))
+                la2_t = tf.math.atan2((coor_y_t[:,-3] - coor_y_t[:,-2]), (coor_x_t[:,-3] - coor_x_t[:,-2] + 1e-5))
+                la2_p = tf.math.atan2((coor_y_p[:,-3] - coor_y_p[:,-2]), (coor_x_p[:,-3] - coor_x_p[:,-2] + 1e-5))
+                angle_loss = tf.math.reduce_mean(((ra1_t - ra1_p)/(8*np.pi))**2+((ra2_t - ra2_p)/(8*np.pi))**2+((la1_t - la1_p)/(8*np.pi))**2+((la2_t - la2_p)/(8*np.pi))**2)
+                reg_loss = tf.math.reduce_mean(tf.math.reduce_mean((coor_x_t-coor_x_p)**2 + (coor_y_t-coor_y_p)**2, axis=1))
                 lm_loss = tf.keras.backend.switch(
-                    tf.keras.backend.max(y_pred) == -1.0 and tf.keras.backend.min(y_pred) == -1.0,
+                    tf.keras.backend.max(target) == -1.0 and tf.keras.backend.min(target) == -1.0,
                     0.0,
-                    tf.keras.losses.MSE(y_true, y_pred)
+                    angle_loss + lamda * reg_loss
                 )
                 return lm_loss
             return landmark_loss_func
