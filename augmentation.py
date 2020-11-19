@@ -9,7 +9,7 @@ seq = [None]
 
 def load_aug():
 
-	sometimes = lambda aug: iaa.Sometimes(0.3, aug)
+	sometimes = lambda aug: iaa.Sometimes(0.2, aug)
 
 	seq[0] = iaa.Sequential(
 		[
@@ -23,7 +23,7 @@ def load_aug():
 						pad_cval=(0, 255)
 					),
 					iaa.Crop(
-						percent=0.1,
+						percent=0.2,
 						keep_size=True
 					),
 					iaa.OneOf([
@@ -38,17 +38,15 @@ def load_aug():
 						# either change the brightness of the whole image (sometimes
 						# per channel) or change the brightness of subareas
 					]),
-					iaa.OneOf([
-						iaa.contrast.LinearContrast((0.5, 2.0), per_channel=0.1), # improve or worsen the contrast
-						iaa.Grayscale(alpha=(0.0, 0.1)),
-						iaa.AdditiveLaplaceNoise(scale=0.01*255),
-						iaa.AdditivePoissonNoise(lam=2),
-						iaa.Multiply(mul=(0.9, 1.1)),
-						iaa.Dropout(p=(0.1, 0.2)),
-						iaa.CoarseDropout(p=0.1, size_percent=0.05),
-						iaa.LinearContrast(),
-						iaa.AveragePooling(2)
-					]),
+					iaa.contrast.LinearContrast((0.5, 2.0), per_channel=0.1), # improve or worsen the contrast
+					iaa.Grayscale(alpha=(0.0, 0.1)),
+					iaa.AdditiveLaplaceNoise(scale=0.01*255),
+					iaa.AdditivePoissonNoise(lam=2),
+					iaa.Multiply(mul=(0.9, 1.1)),
+					iaa.Dropout(p=(0.1, 0.2)),
+					iaa.CoarseDropout(p=0.1, size_percent=0.05),
+					iaa.LinearContrast(),
+					iaa.AveragePooling(2),
 					iaa.MotionBlur(k=3),
 				],
 				random_order=True

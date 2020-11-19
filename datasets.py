@@ -15,7 +15,7 @@ from augmentation import augment_img
 
 class DataSequence(Sequence):
 
-    def __init__(self, image_folder, label_file, batch_size=8, input_size=(128, 128), shuffle=True, augment=False, random_flip=True, normalize=True):
+    def __init__(self, image_folder, label_file, batch_size=8, input_size=(224, 224), shuffle=True, augment=False, random_flip=True, normalize=True):
         """
         Keras Sequence object to train a model on larger-than-memory data.
         """

@@ -12,15 +12,15 @@ def write_label(data, file_path):
 # random.seed(42)
 # random.shuffle(data)
 
-t1 = int(0.8*len(data))
-t2 = int(0.9*len(data))
+t1 = int(0.7*len(data))
+t2 = int(0.85*len(data))
 
 for d in data:
     d.pop("is_visible", None)
     d["is_pushing_up"] = True
     d["contains_person"] = True
 
-train = data[:t1]
+train = data[:t1] + data[:t1]
 val = data[t1:t2]
 test = data[t2:]
 
