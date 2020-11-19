@@ -34,10 +34,10 @@ for ii, label in enumerate(data):
     frame_data = {}
     video_id = label["video_id"]
     path = "/mnt/DATA/PUSHUP_PROJECT/processed/{}.mp4".format(video_id)
-    video = cv2.VideoCapture(path)
-    if video is None:
-        print("Error reading video")
-        exit(0)
+    # video = cv2.VideoCapture(path)
+    # if video is None:
+    #     print("Error reading video")
+    #     exit(0)
 
     if label["_id"] in [4797, 4796]:
         continue
@@ -52,24 +52,24 @@ for ii, label in enumerate(data):
 
     # for i in range(frame_id):
     #     video.read()
-    video.set(cv2.CAP_PROP_POS_FRAMES, frame_id)
-    res, draw = video.read()
-    if not res:
-        print("Error")
-        exit(0)
+    # video.set(cv2.CAP_PROP_POS_FRAMES, frame_id)
+    # res, draw = video.read()
+    # if not res:
+    #     print("Error")
+    #     exit(0)
 
-    draw = preprocess_img(draw)
-    cv2.imwrite(OUTPUT_IMG_FOLDER.format(video_id, frame_id), draw)
+    # draw = preprocess_img(draw)
+    # cv2.imwrite(OUTPUT_IMG_FOLDER.format(video_id, frame_id), draw)
     frame_data["image"] = "{}_{}.png".format(video_id, frame_id)
     points = np.array(points, dtype=float)
 
     frame_data["is_visible"] = [1,1,1,1,1,1,1]
     frame_data["points"] = []
-    for i, point in enumerate(points):
-        point = [int(point[0]), int(point[1])]
-        frame_data["points"].append(point)
-        draw = cv2.circle(draw, tuple(point), 3, (0,255,0), -1)
-        draw = cv2.putText(draw,  str(i), (point[0]+10, point[1]+10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv2.LINE_AA)
+    # for i, point in enumerate(points):
+    #     point = [int(point[0]), int(point[1])]
+    #     frame_data["points"].append(point)
+    #     draw = cv2.circle(draw, tuple(point), 3, (0,255,0), -1)
+    #     draw = cv2.putText(draw,  str(i), (point[0]+10, point[1]+10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv2.LINE_AA)
     new_data.append(frame_data)
     # cv2.imshow("Draw", draw)
     # cv2.waitKey(0)

@@ -10,8 +10,8 @@ def write_label(data, file_path):
 
 random.seed(42)
 random.shuffle(data)
-t1 = int(0.8*len(data))
-t2 = int(0.9*len(data))
+t1 = int(0.94*len(data))
+t2 = int(0.97*len(data))
 
 for d in data:
     d.pop("is_visible", None)

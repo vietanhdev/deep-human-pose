@@ -14,17 +14,17 @@
         "val_batch_size":               8,
         "nb_epochs":                    150,
         "debug":                        true,
-        "model_folder" :                "./efficientb3_3head_2/",
-        "model_base_name":              "efficientb3_3head_2",
+        "model_folder" :                "./efficientb3_3head_3/",
+        "model_base_name":              "efficientb3_3head_3",
         "load_weights":                 false,
-        "pretrained_weights_path":      "models/model_to_load.h5",
-        "logs_dir" :                    "logs_e3_3head_2",
-        "learning_rate":                5e-6,
-        "loss_weights":                 [5, 1, 1]
+        "pretrained_weights_path":      "/mnt/DATA/PUSHUP_PROJECT/deep-human-pose/efficientb3_3head_2/efficientb3_3head_2_ep016.h5",
+        "logs_dir" :                    "logs_e3_3head_3",
+        "learning_rate":                5e-7,
+        "loss_weights":                 [10, 1, 1]
     },
 
     "test": {
-        "model_file" :                 "/mnt/DATA/PUSHUP_PROJECT/deep-human-pose/efficientb3_3head_2/efficientb3_3head_2_ep016.h5",
+        "model_file" :                 "/mnt/DATA/PUSHUP_PROJECT/deep-human-pose/efficientb3_3head_3/efficientb3_3head_3_ep004.h5",
         "test_data_folder":            "./data/3heads/images/",
         "test_labels":                 "./data/3heads/test.json",
         "test_batch_size":             8

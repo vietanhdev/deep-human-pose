@@ -36,44 +36,38 @@ class HeadPoseNet:
             efn_backbond.trainable = False
             feature = efn_backbond(inputs)
             feature = tf.keras.layers.Flatten()(feature)
-            feature = tf.keras.layers.Dropout(0.5)(feature)
             feature = tf.keras.layers.Dense(1024, activation='relu')(feature)
-            feature = tf.keras.layers.Dropout(0.5)(feature)
         elif self.backbond == "EFFICIENT_NET_B3":
             efn_backbond = efn.EfficientNetB3(weights='imagenet', include_top=False, input_shape=(self.im_height, self.im_width, 3))
             efn_backbond.trainable = False
             feature = efn_backbond(inputs)
             feature = tf.keras.layers.Flatten()(feature)
-            feature = tf.keras.layers.Dropout(0.5)(feature)
             feature = tf.keras.layers.Dense(1024, activation='relu')(feature)
-            feature = tf.keras.layers.Dropout(0.5)(feature)
         elif self.backbond == "EFFICIENT_NET_B4":
             efn_backbond = efn.EfficientNetB4(weights='imagenet', include_top=False, input_shape=(self.im_height, self.im_width, 3))
             efn_backbond.trainable = False
             feature = efn_backbond(inputs)
             feature = tf.keras.layers.Flatten()(feature)
-            feature = tf.keras.layers.Dropout(0.5)(feature)
             feature = tf.keras.layers.Dense(1024, activation='relu')(feature)
-            feature = tf.keras.layers.Dropout(0.5)(feature)
         else:
             raise ValueError('No such arch!... Please check the backend in config file')
 
         fc_1_landmarks = tf.keras.layers.Dense(512, activation='relu')(feature)
-        feature = tf.keras.layers.Dropout(0.25)(feature)
+        feature = tf.keras.layers.Dropout(0.1)(feature)
         feature = tf.keras.layers.Dense(256, activation='relu')(feature)
-        feature = tf.keras.layers.Dropout(0.25)(feature)
+        feature = tf.keras.layers.Dropout(0.1)(feature)
         fc_2_landmarks = tf.keras.layers.Dense(14, name='landmarks')(fc_1_landmarks)
 
         fc_1_is_pushing_up = tf.keras.layers.Dense(512, activation='relu')(feature)
-        feature = tf.keras.layers.Dropout(0.25)(feature)
+        feature = tf.keras.layers.Dropout(0.1)(feature)
         feature = tf.keras.layers.Dense(256, activation='relu')(feature)
-        feature = tf.keras.layers.Dropout(0.25)(feature)
+        feature = tf.keras.layers.Dropout(0.1)(feature)
         fc_2_is_pushing_up = tf.keras.layers.Dense(1, name='is_pushing_up', activation="sigmoid")(fc_1_is_pushing_up)
 
         fc_1_contains_person = tf.keras.layers.Dense(512, activation='relu')(feature)
-        feature = tf.keras.layers.Dropout(0.25)(feature)
+        feature = tf.keras.layers.Dropout(0.1)(feature)
         feature = tf.keras.layers.Dense(256, activation='relu')(feature)
-        feature = tf.keras.layers.Dropout(0.25)(feature)
+        feature = tf.keras.layers.Dropout(0.1)(feature)
         fc_2_contains_person = tf.keras.layers.Dense(1, name='contains_person', activation="sigmoid")(fc_1_contains_person)
     
         model = tf.keras.Model(inputs=inputs, outputs=[fc_2_landmarks, fc_2_is_pushing_up, fc_2_contains_person])
@@ -109,7 +103,7 @@ class HeadPoseNet:
 
         # Define the callbacks for training
         tb = TensorBoard(log_dir=train_conf["logs_dir"], write_graph=True)
-        mc = ModelCheckpoint(filepath=os.path.join(train_conf["model_folder"], train_conf["model_base_name"] + "_ep{epoch:03d}.h5"), save_weights_only=True, save_format="h5", verbose=2)
+        mc = ModelCheckpoint(filepath=os.path.join(train_conf["model_folder"], train_conf["model_base_name"] + "_ep{epoch:03d}.h5"), save_weights_only=False, save_format="h5", verbose=2)
         
         self.model.fit(train_dataset,
                         epochs=train_conf["nb_epochs"],

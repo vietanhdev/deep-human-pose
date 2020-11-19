@@ -57,3 +57,46 @@ def draw_landmark(img, landmark):
     for i in range(unnormalized_landmark.shape[0]):
         img = cv2.circle(img, (int(unnormalized_landmark[i][0]), int(unnormalized_landmark[i][1])), 2, (0,255,0), 2)
     return img
+
+
+def crop_loosely(shape, img, input_size, landmark=None):
+    bbox, scale_x, scale_y = get_loosen_bbox(shape, img, input_size)
+    crop_face = img[bbox[1]:bbox[3], bbox[0]:bbox[2]]
+    crop_face = cv2.resize(crop_face, input_size)
+
+    
+
+    return crop_face
+
+def get_loosen_bbox(shape, img, input_size):
+    max_x = min(shape[2], img.shape[1])
+    min_x = max(shape[0], 0)
+    max_y = min(shape[3], img.shape[0])
+    min_y = max(shape[1], 0)
+    
+    Lx = max_x - min_x
+    Ly = max_y - min_y
+    
+    Lmax = int(max(Lx, Ly) * 2.0)
+    
+    delta = Lmax * 0.4
+    
+    center_x = (shape[2] + shape[0]) // 2
+    center_y = (shape[3] + shape[1]) // 2
+    start_x = int(center_x - delta)
+    start_y = int(center_y - delta - 10)
+    end_x = int(center_x + delta)
+    end_y = int(center_y + delta - 10)
+    
+    if start_y < 0:
+        start_y = 0
+    if start_x < 0:
+        start_x = 0
+    if end_x > img.shape[1]:
+        end_x = img.shape[1]
+    if end_y > img.shape[0]:
+        end_y = img.shape[0]
+
+    scale_x = float(input_size[0]) / (end_x - start_x)
+    scale_y = float(input_size[1]) / (end_y - start_y)
+    return (start_x, start_y, end_x, end_y), scale_x, scale_y
