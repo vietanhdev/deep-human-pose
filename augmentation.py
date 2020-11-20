@@ -18,7 +18,7 @@ def load_aug():
 			iaa.SomeOf((0, 5),
 				[
 					iaa.CropAndPad(
-						percent=(-0.1, 0.1),
+						percent=(-0.2, 0.2),
 						pad_mode=ia.ALL,
 						pad_cval=(0, 255)
 					),
@@ -56,18 +56,23 @@ def load_aug():
 	)
 
 
-def augment_img(image, landmark):
+def augment_img(image, landmark=None):
 	if seq[0] is None:
 		load_aug()
-	image_aug, landmark = seq[0](images=np.array([image]), keypoints=np.array([landmark]))
-	image_aug = image_aug[0]
-	landmark = landmark[0]
 
-	# draw = image_aug.copy()
-	# for i in range(landmark.shape[0]):
-	# 	draw = cv2.circle(draw, (int(landmark[i][0]), int(landmark[i][1])), 2, (0,255,0), 2)
-	# cv2.imshow("draw", draw)
-	# cv2.waitKey(0)
-	return image_aug, landmark
+	if landmark is None:
+		image_aug = seq[0](images=np.array([image]))
+		return image_aug[0]
+	else:
+		image_aug, landmark = seq[0](images=np.array([image]), keypoints=np.array([landmark]))
+		image_aug = image_aug[0]
+		landmark = landmark[0]
+
+		# draw = image_aug.copy()
+		# for i in range(landmark.shape[0]):
+		# 	draw = cv2.circle(draw, (int(landmark[i][0]), int(landmark[i][1])), 2, (0,255,0), 2)
+		# cv2.imshow("draw", draw)
+		# cv2.waitKey(0)
+		return image_aug, landmark
 
 

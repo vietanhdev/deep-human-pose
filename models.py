@@ -6,10 +6,7 @@ import scipy.io as sio
 import utils
 import math
 import time
-from tensorflow.keras.callbacks import LearningRateScheduler
-from tensorflow.keras.layers import Conv2D, BatchNormalization, Activation, MaxPool2D, DepthwiseConv2D, GlobalAveragePooling2D
-from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping
-from tensorflow.keras import callbacks
+from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
 from backbonds.shufflenetv2_backbond import *
 import efficientnet.tfkeras as efn 
 from tensorflow.keras import optimizers
@@ -33,66 +30,51 @@ class HeadPoseNet:
             feature = tf.keras.layers.Flatten()(feature)
         elif self.backbond == "EFFICIENT_NET_B0":
             efn_backbond = efn.EfficientNetB0(weights='imagenet', include_top=False, input_shape=(self.im_height, self.im_width, 3))
-            efn_backbond.trainable = False
+            efn_backbond.trainable = True
             feature = efn_backbond(inputs)
             feature = tf.keras.layers.Flatten()(feature)
+            feature = tf.keras.layers.Dropout(0.5)(feature)
             feature = tf.keras.layers.Dense(1024, activation='relu')(feature)
+            feature = tf.keras.layers.Dropout(0.2)(feature)
         elif self.backbond == "EFFICIENT_NET_B3":
             efn_backbond = efn.EfficientNetB3(weights='imagenet', include_top=False, input_shape=(self.im_height, self.im_width, 3))
-            efn_backbond.trainable = False
+            efn_backbond.trainable = True
             feature = efn_backbond(inputs)
             feature = tf.keras.layers.Flatten()(feature)
+            feature = tf.keras.layers.Dropout(0.5)(feature)
             feature = tf.keras.layers.Dense(1024, activation='relu')(feature)
+            feature = tf.keras.layers.Dropout(0.2)(feature)
         elif self.backbond == "EFFICIENT_NET_B4":
             efn_backbond = efn.EfficientNetB4(weights='imagenet', include_top=False, input_shape=(self.im_height, self.im_width, 3))
-            efn_backbond.trainable = False
+            efn_backbond.trainable = True
             feature = efn_backbond(inputs)
             feature = tf.keras.layers.Flatten()(feature)
+            feature = tf.keras.layers.Dropout(0.5)(feature)
             feature = tf.keras.layers.Dense(1024, activation='relu')(feature)
+            feature = tf.keras.layers.Dropout(0.2)(feature)
         else:
             raise ValueError('No such arch!... Please check the backend in config file')
 
-        fc_1_landmarks = tf.keras.layers.Dense(512, activation='relu')(feature)
-        feature = tf.keras.layers.Dropout(0.1)(feature)
-        feature = tf.keras.layers.Dense(256, activation='relu')(feature)
-        feature = tf.keras.layers.Dropout(0.1)(feature)
-        fc_2_landmarks = tf.keras.layers.Dense(14, name='landmarks')(fc_1_landmarks)
+        feature1 = tf.keras.layers.Dense(256, activation='relu')(feature)
+        feature1 = tf.keras.layers.Dropout(0.1)(feature1)
+        fc_2_landmarks = tf.keras.layers.Dense(14, name='landmarks', activation="sigmoid")(feature1)
 
-        fc_1_is_pushing_up = tf.keras.layers.Dense(512, activation='relu')(feature)
-        feature = tf.keras.layers.Dropout(0.1)(feature)
-        feature = tf.keras.layers.Dense(256, activation='relu')(feature)
-        feature = tf.keras.layers.Dropout(0.1)(feature)
-        fc_2_is_pushing_up = tf.keras.layers.Dense(1, name='is_pushing_up', activation="sigmoid")(fc_1_is_pushing_up)
+        feature2 = tf.keras.layers.Dense(256, activation='relu')(feature)
+        feature2 = tf.keras.layers.Dropout(0.1)(feature2)
+        fc_2_is_pushing_up = tf.keras.layers.Dense(1, name='is_pushing_up', activation="sigmoid")(feature2)
 
-        fc_1_contains_person = tf.keras.layers.Dense(512, activation='relu')(feature)
-        feature = tf.keras.layers.Dropout(0.1)(feature)
-        feature = tf.keras.layers.Dense(256, activation='relu')(feature)
-        feature = tf.keras.layers.Dropout(0.1)(feature)
-        fc_2_contains_person = tf.keras.layers.Dense(1, name='contains_person', activation="sigmoid")(fc_1_contains_person)
+        feature3 = tf.keras.layers.Dense(256, activation='relu')(feature)
+        feature3 = tf.keras.layers.Dropout(0.1)(feature3)
+        fc_2_contains_person = tf.keras.layers.Dense(1, name='contains_person', activation="sigmoid")(feature3)
     
         model = tf.keras.Model(inputs=inputs, outputs=[fc_2_landmarks, fc_2_is_pushing_up, fc_2_contains_person])
 
-        def landmark_loss(lamda = 10):
+        def landmark_loss():
             def landmark_loss_func(target, pred):
-                esp = 1e-5
-                coor_x_t = target[:][:,::2]
-                coor_y_t = target[:,1:][:,::2]
-                coor_x_p = pred[:][:,::2]
-                coor_y_p = pred[:,1:][:,::2]
-                ra1_t = tf.math.atan2((coor_y_t[:,1] - coor_y_t[:,0]), (coor_x_t[:,1] - coor_x_t[:,0] + 1e-5))
-                ra1_p = tf.math.atan2((coor_y_p[:,1] - coor_y_p[:,0]), (coor_x_p[:,1] - coor_x_p[:,0] + 1e-5))
-                ra2_t = tf.math.atan2((coor_y_t[:,2] - coor_y_t[:,1]), (coor_x_t[:,2] - coor_x_t[:,1] + 1e-5))
-                ra2_p = tf.math.atan2((coor_y_p[:,2] - coor_y_p[:,1]), (coor_x_p[:,2] - coor_x_p[:,1] + 1e-5))
-                la1_t = tf.math.atan2((coor_y_t[:,-2] - coor_y_t[:,-1]), (coor_x_t[:,-2] - coor_x_t[:,-1] + 1e-5))
-                la1_p = tf.math.atan2((coor_y_p[:,-2] - coor_y_p[:,-1]), (coor_x_p[:,-2] - coor_x_p[:,-1] + 1e-5))
-                la2_t = tf.math.atan2((coor_y_t[:,-3] - coor_y_t[:,-2]), (coor_x_t[:,-3] - coor_x_t[:,-2] + 1e-5))
-                la2_p = tf.math.atan2((coor_y_p[:,-3] - coor_y_p[:,-2]), (coor_x_p[:,-3] - coor_x_p[:,-2] + 1e-5))
-                angle_loss = tf.math.reduce_mean(((ra1_t - ra1_p)/(8*np.pi))**2+((ra2_t - ra2_p)/(8*np.pi))**2+((la1_t - la1_p)/(8*np.pi))**2+((la2_t - la2_p)/(8*np.pi))**2)
-                reg_loss = tf.math.reduce_mean(tf.math.reduce_mean((coor_x_t-coor_x_p)**2 + (coor_y_t-coor_y_p)**2, axis=1))
                 lm_loss = tf.keras.backend.switch(
-                    tf.keras.backend.max(target) == -1.0 and tf.keras.backend.min(target) == -1.0,
+                    tf.keras.backend.min(target) < 0,
                     0.0,
-                    angle_loss + lamda * reg_loss
+                    tf.keras.losses.binary_crossentropy(target, pred)
                 )
                 return lm_loss
             return landmark_loss_func
@@ -127,7 +109,7 @@ class HeadPoseNet:
                         validation_steps=len(val_dataset),
                         # max_queue_size=64,
                         # workers=6,
-                        use_multiprocessing=True,
+                        # use_multiprocessing=True,
                         callbacks=[tb, mc],
                         verbose=1)
             
@@ -182,23 +164,19 @@ class HeadPoseNet:
         print("- Avg. FPS: {}".format(avg_fps))
         
 
-    def predict_batch(self, face_imgs, verbose=1, normalize=True):
+    def predict_batch(self, imgs, verbose=1, normalize=True):
         if normalize:
-            img_batch = self.normalize_img_batch(face_imgs)
+            img_batch = self.normalize_img_batch(imgs)
         else:
-            img_batch = np.array(face_imgs)
+            img_batch = np.array(imgs)
         pred_landmark, pred_is_pushing_up, pred_contains_person = self.model.predict(img_batch, batch_size=1, verbose=verbose)
         return pred_landmark, pred_is_pushing_up, pred_contains_person
 
-    def normalize_img_batch(self, face_imgs):
-        image_batch = np.array(face_imgs, dtype=np.float32)
+    def normalize_img_batch(self, imgs):
+        image_batch = np.array(imgs, dtype=np.float32)
         image_batch /= 255.
-        mean = [0.485, 0.456, 0.406]
-        std = [0.229, 0.224, 0.225]
-        image_batch[..., 0] -= mean[0]
-        image_batch[..., 1] -= mean[1]
-        image_batch[..., 2] -= mean[2]
-        image_batch[..., 0] /= std[0]
-        image_batch[..., 1] /= std[1]
-        image_batch[..., 2] /= std[2]
+        mean = np.array([0.485, 0.456, 0.406])
+        std = np.array([0.229, 0.224, 0.225])
+        image_batch[..., :] -= mean
+        image_batch[..., :] = std
         return image_batch

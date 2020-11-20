@@ -1,0 +1,32 @@
+{
+    "model" : {
+        "backbond":                    "EFFICIENT_NET_B3",
+        "im_width":                    224,
+        "im_height":                   224
+    },
+
+    "train": {
+        "train_data_folder":            "./data/3heads/images/",
+        "val_data_folder":              "./data/3heads/images/",
+        "train_labels":                 "./data/3heads/train.json",
+        "val_labels":                   "./data/3heads/val.json",
+        "train_batch_size":             16,
+        "val_batch_size":               8,
+        "nb_epochs":                    150,
+        "debug":                        true,
+        "model_folder" :                "./efficientb3_3head_newloss_sigmoid/",
+        "model_base_name":              "efficientb3_3head_newloss_sigmoid",
+        "load_weights":                 true,
+        "pretrained_weights_path":      "/mnt/DATA/PUSHUP_PROJECT/deep-human-pose/efficientb3_3head_newloss_sigmoid/efficientb3_3head_newloss_sigmoid_ep047.h5",
+        "logs_dir" :                    "logs_e3_3head_newloss",
+        "learning_rate":                1e-6,
+        "loss_weights":                 [5, 1, 1]
+    },
+
+    "test": {
+        "model_file" :                 "",
+        "test_data_folder":            "./data/3heads/images/",
+        "test_labels":                 "./data/3heads/test.json",
+        "test_batch_size":             8
+    }
+}
