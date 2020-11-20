@@ -64,11 +64,12 @@ class DataSequence(Sequence):
         
             image, landmark, is_pushing_up, contains_person = self.load_data(self.image_folder, data, augment=self.augment, flip=flip)
 
-
             batch_image.append(image)
             batch_landmark.append(landmark)
             batch_is_pushing_up.append(is_pushing_up)
             batch_contains_person.append(contains_person)
+
+        print(batch_landmark)
 
         batch_image = np.array(batch_image)
         batch_landmark = np.array(batch_landmark)
@@ -95,7 +96,7 @@ class DataSequence(Sequence):
         if flip:
 
             # Flip landmark
-            landmark = np.multiply(landmark, np.array([-1, 1]))
+            landmark[:, 0] = 1 - landmark[:, 0]
 
             # Change the indices of landmark points and visibility
             l = landmark
@@ -135,13 +136,9 @@ class DataSequence(Sequence):
         if self.normalize:
             img = img.astype(np.float, copy=False)
             img /= 255.
-            mean = [0.485, 0.456, 0.406]
-            std = [0.229, 0.224, 0.225]
-            img[..., 0] -= mean[0]
-            img[..., 1] -= mean[1]
-            img[..., 2] -= mean[2]
-            img[..., 0] /= std[0]
-            img[..., 1] /= std[1]
-            img[..., 2] /= std[2]
+            mean = np.array([0.485, 0.456, 0.406])
+            std = np.array([0.229, 0.224, 0.225])
+            img[..., :] -= mean
+            img[..., :] /= std
 
         return img, landmark, is_pushing_up, contains_person

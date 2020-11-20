@@ -1,17 +1,17 @@
 import json
 import argparse
 from pathlib import Path
-import models
+import models_2 as models
 import utils
-import datasets
+import datasets_2 as datasets
 from imutils import face_utils
 import scipy.io as sio
 import cv2
 import numpy as np
 import os
 import tensorflow as tf
-# for gpu in tf.config.experimental.list_physical_devices('GPU'):
-#     tf.compat.v2.config.experimental.set_memory_growth(gpu, True)
+for gpu in tf.config.experimental.list_physical_devices('GPU'):
+    tf.compat.v2.config.experimental.set_memory_growth(gpu, True)
 
 # tf.compat.v1.disable_eager_execution()
 
