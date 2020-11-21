@@ -130,3 +130,4 @@ dmypy.json
 /labels.json
 /efficientb3_*
 /efficientb4_*
+/efficientnetb2_*

@@ -10,8 +10,8 @@ import cv2
 import numpy as np
 import os
 import tensorflow as tf
-# for gpu in tf.config.experimental.list_physical_devices('GPU'):
-#     tf.compat.v2.config.experimental.set_memory_growth(gpu, True)
+for gpu in tf.config.experimental.list_physical_devices('GPU'):
+    tf.compat.v2.config.experimental.set_memory_growth(gpu, True)
 
 # tf.compat.v1.disable_eager_execution()
 
@@ -37,7 +37,7 @@ test_dataset = datasets.DataSequence(config["test"]["test_data_folder"], config[
 # Build model
 net = models.HeadPoseNet(config["model"]["im_width"], config["model"]
                         ["im_height"], learning_rate=config["train"]["learning_rate"], loss_weights=config["train"]["loss_weights"],
-                        backbond=config["model"]["backbond"])
+                        backbond=config["model"]["backbond"], loss_func=config["train"]["loss_func"])
 
 # Train model
 net.train(train_dataset, val_dataset, config["train"])

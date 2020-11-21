@@ -28,7 +28,9 @@ class DataSequence(Sequence):
         self.normalize = normalize
 
         with open(label_file, "r") as fp:
-            self.data = json.load(fp)["labels"]
+            data = json.load(fp)["labels"]
+            # Filter data not containing person
+            self.data = [d for d in data if d["contains_person"]]
 
         if shuffle:
             random.shuffle(self.data)
@@ -51,8 +53,6 @@ class DataSequence(Sequence):
 
         batch_image = []
         batch_landmark = []
-        batch_is_pushing_up = []
-        batch_contains_person = []
 
         for data in batch_data:
             
@@ -62,22 +62,15 @@ class DataSequence(Sequence):
             if self.random_flip and random.random() < 0.5:
                 flip = True
         
-            image, landmark, is_pushing_up, contains_person = self.load_data(self.image_folder, data, augment=self.augment, flip=flip)
+            image, landmark = self.load_data(self.image_folder, data, augment=self.augment, flip=flip)
 
             batch_image.append(image)
             batch_landmark.append(landmark)
-            batch_is_pushing_up.append(is_pushing_up)
-            batch_contains_person.append(contains_person)
-
-        print(batch_landmark)
 
         batch_image = np.array(batch_image)
         batch_landmark = np.array(batch_landmark)
-        batch_landmark = batch_landmark.reshape(batch_landmark.shape[0], -1)
-        batch_is_pushing_up = np.array(batch_is_pushing_up).astype(int)
-        batch_contains_person = np.array(batch_contains_person).astype(int)
 
-        return batch_image, [batch_landmark, batch_is_pushing_up, batch_contains_person]
+        return batch_image, batch_landmark
 
     def set_normalization(self, normalize):
         self.normalize = normalize
@@ -86,9 +79,7 @@ class DataSequence(Sequence):
 
         landmark = data["points"]
         is_pushing_up = data["is_pushing_up"]
-        contains_person = data["contains_person"]
         path = os.path.join(img_folder, data["image"])
-        # print(path)
         img = cv2.imread(path)
         landmark = utils.normalize_landmark(landmark, (img.shape[1], img.shape[0]))
         img = cv2.resize(img, (self.input_size))
@@ -104,7 +95,6 @@ class DataSequence(Sequence):
 
 
         unnomarlized_landmark = utils.unnormalize_landmark(landmark, self.input_size)
-
 
         if flip:
             img = cv2.flip(img, 1)
@@ -141,4 +131,10 @@ class DataSequence(Sequence):
             img[..., :] -= mean
             img[..., :] /= std
 
-        return img, landmark, is_pushing_up, contains_person
+        flatten_landmark = []
+        for l in landmark:
+            flatten_landmark.append(l[0])
+            flatten_landmark.append(l[1])
+        flatten_landmark.append(int(is_pushing_up))
+
+        return img, flatten_landmark

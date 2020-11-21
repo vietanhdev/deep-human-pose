@@ -18,12 +18,12 @@ def load_aug():
 			iaa.SomeOf((0, 5),
 				[
 					iaa.CropAndPad(
-						percent=(-0.2, 0.2),
+						percent=(-0.1, 0.1),
 						pad_mode=ia.ALL,
 						pad_cval=(0, 255)
 					),
 					iaa.Crop(
-						percent=0.2,
+						percent=0.1,
 						keep_size=True
 					),
 					iaa.OneOf([
