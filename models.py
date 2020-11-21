@@ -14,14 +14,15 @@ import pathlib
 from sklearn.metrics import precision_recall_fscore_support
 
 class HeadPoseNet:
-    def __init__(self, im_width, im_height, learning_rate=0.001, loss_weights=[1,1], backbond="SHUFFLE_NET_V2"):
+    def __init__(self, im_width, im_height, learning_rate=0.001, loss_weights=[1,1], backbond="SHUFFLE_NET_V2", loss_func="binary_crossentropy"):
         self.im_width = im_width
         self.im_height = im_height
         self.learning_rate = learning_rate
         self.loss_weights = loss_weights
         self.backbond = backbond
+        self.loss_func = loss_func
         self.model = self.__create_model()
-
+        
     def __create_model(self):
         inputs = tf.keras.layers.Input(shape=(self.im_height, self.im_width, 3))
 
@@ -35,6 +36,14 @@ class HeadPoseNet:
             feature = tf.keras.layers.Flatten()(feature)
             feature = tf.keras.layers.Dropout(0.5)(feature)
             feature = tf.keras.layers.Dense(1024, activation='relu')(feature)
+            feature = tf.keras.layers.Dropout(0.2)(feature)
+        elif self.backbond == "EFFICIENT_NET_B2":
+            efn_backbond = efn.EfficientNetB2(weights='imagenet', include_top=False, input_shape=(self.im_height, self.im_width, 3))
+            efn_backbond.trainable = True
+            feature = efn_backbond(inputs)
+            feature = tf.keras.layers.GlobalAveragePooling2D()(feature)
+            feature = tf.keras.layers.Dropout(0.5)(feature)
+            feature = tf.keras.layers.Dense(256, activation='relu')(feature)
             feature = tf.keras.layers.Dropout(0.2)(feature)
         elif self.backbond == "EFFICIENT_NET_B3":
             efn_backbond = efn.EfficientNetB3(weights='imagenet', include_top=False, input_shape=(self.im_height, self.im_width, 3))
@@ -55,33 +64,44 @@ class HeadPoseNet:
         else:
             raise ValueError('No such arch!... Please check the backend in config file')
 
-        feature1 = tf.keras.layers.Dense(256, activation='relu')(feature)
-        feature1 = tf.keras.layers.Dropout(0.1)(feature1)
-        fc_2_landmarks = tf.keras.layers.Dense(14, name='landmarks', activation="sigmoid")(feature1)
-
-        feature2 = tf.keras.layers.Dense(256, activation='relu')(feature)
-        feature2 = tf.keras.layers.Dropout(0.1)(feature2)
-        fc_2_is_pushing_up = tf.keras.layers.Dense(1, name='is_pushing_up', activation="sigmoid")(feature2)
-
-        feature3 = tf.keras.layers.Dense(256, activation='relu')(feature)
-        feature3 = tf.keras.layers.Dropout(0.1)(feature3)
-        fc_2_contains_person = tf.keras.layers.Dense(1, name='contains_person', activation="sigmoid")(feature3)
+        outputs = tf.keras.layers.Dense(15, name='landmarks', activation="sigmoid")(feature)
     
-        model = tf.keras.Model(inputs=inputs, outputs=[fc_2_landmarks, fc_2_is_pushing_up, fc_2_contains_person])
+        model = tf.keras.Model(inputs=inputs, outputs=outputs)
 
-        def landmark_loss():
+        # print(model.summary())
+        # exit(0)
+
+        def landmark_loss(alpha=0.8, beta=0.2):
             def landmark_loss_func(target, pred):
-                lm_loss = tf.keras.backend.switch(
-                    tf.keras.backend.min(target) < 0,
-                    0.0,
-                    tf.keras.losses.binary_crossentropy(target, pred)
-                )
-                return lm_loss
+                coor_x_t = target[:][:,::2]
+                coor_y_t = target[:,1:][:,::2]
+                coor_x_p = pred[:][:,::2]
+                coor_y_p = pred[:,1:][:,::2]
+                ra1_t = tf.math.atan2((coor_y_t[:,1] - coor_y_t[:,0]), (coor_x_t[:,1] - coor_x_t[:,0] + 1e-5))
+                ra1_p = tf.math.atan2((coor_y_p[:,1] - coor_y_p[:,0]), (coor_x_p[:,1] - coor_x_p[:,0] + 1e-5))
+                ra2_t = tf.math.atan2((coor_y_t[:,2] - coor_y_t[:,1]), (coor_x_t[:,2] - coor_x_t[:,1] + 1e-5))
+                ra2_p = tf.math.atan2((coor_y_p[:,2] - coor_y_p[:,1]), (coor_x_p[:,2] - coor_x_p[:,1] + 1e-5))
+                la1_t = tf.math.atan2((coor_y_t[:,-2] - coor_y_t[:,-1]), (coor_x_t[:,-2] - coor_x_t[:,-1] + 1e-5))
+                la1_p = tf.math.atan2((coor_y_p[:,-2] - coor_y_p[:,-1]), (coor_x_p[:,-2] - coor_x_p[:,-1] + 1e-5))
+                la2_t = tf.math.atan2((coor_y_t[:,-3] - coor_y_t[:,-2]), (coor_x_t[:,-3] - coor_x_t[:,-2] + 1e-5))
+                la2_p = tf.math.atan2((coor_y_p[:,-3] - coor_y_p[:,-2]), (coor_x_p[:,-3] - coor_x_p[:,-2] + 1e-5))
+                angle_loss = tf.math.reduce_mean(((ra1_t - ra1_p)/(8*np.pi))**2+((ra2_t - ra2_p)/(8*np.pi))**2+((la1_t - la1_p)/(8*np.pi))**2+((la2_t - la2_p)/(8*np.pi))**2)
+                bce_loss = tf.keras.losses.binary_crossentropy(target, pred)
+                lm_loss = alpha * bce_loss + beta * angle_loss
             return landmark_loss_func
-        losses = { 'landmarks': landmark_loss(), 'is_pushing_up': 'binary_crossentropy', 'contains_person': 'binary_crossentropy'}
+
+
+        loss_func = None
+        if self.loss_func == "binary_crossentropy":
+            loss_func = "binary_crossentropy"
+        elif self.loss_func == "landmark_loss":
+            loss_func = landmark_loss()
+        else:
+            print("Unknown loss function:", self.loss_func)
+            exit(1)
 
         model.compile(optimizer=optimizers.Adam(self.learning_rate),
-                        loss=losses, loss_weights=self.loss_weights)
+                        loss=loss_func)
        
         return model
 
@@ -121,24 +141,21 @@ class HeadPoseNet:
         test_dataset.set_normalization(False)
         total_landmark = []
         total_is_pushing_up = []
-        total_contains_person = []
         total_landmark_pred = []
         total_is_pushing_up_pred = []
-        total_contains_person_pred = []
         for images, labels in test_dataset:
 
-            batch_landmark, batch_is_pushing_up, batch_contains_person = labels
+            batch_landmark = labels[:14]
+            batch_is_pushing_up = labels[14]
             total_landmark += batch_landmark.tolist()
-            total_is_pushing_up += batch_is_pushing_up.tolist()
-            total_contains_person += batch_contains_person.tolist()
+            total_is_pushing_up.append(batch_is_pushing_up)
 
             start_time = time.time()
-            batch_landmark_pred, batch_is_pushing_up_pred, batch_contains_person_pred = self.predict_batch(images, normalize=True)
+            batch_landmark_pred = self.predict_batch(images, normalize=True)
             total_time += time.time() - start_time
 
-            total_landmark_pred += batch_landmark_pred.tolist()
-            total_is_pushing_up_pred += batch_is_pushing_up_pred.tolist()
-            total_contains_person_pred += batch_contains_person_pred.tolist()
+            total_landmark_pred += batch_landmark_pred.tolist()[:14]
+            total_is_pushing_up_pred.append(batch_landmark_pred.tolist()[14])
             
             total_samples += np.array(images).shape[0]
     
@@ -160,7 +177,6 @@ class HeadPoseNet:
         print("### MAE: ")
         print("- Landmark MAE: {}".format(landmark_error / total_samples / 14))
         print("- Pushing up: ", precision_recall_fscore_support(total_is_pushing_up, total_is_pushing_up_pred, average='macro'))
-        print("- Contains person: ", precision_recall_fscore_support(total_contains_person, total_contains_person_pred, average='macro'))
         print("- Avg. FPS: {}".format(avg_fps))
         
 
@@ -169,8 +185,8 @@ class HeadPoseNet:
             img_batch = self.normalize_img_batch(imgs)
         else:
             img_batch = np.array(imgs)
-        pred_landmark, pred_is_pushing_up, pred_contains_person = self.model.predict(img_batch, batch_size=1, verbose=verbose)
-        return pred_landmark, pred_is_pushing_up, pred_contains_person
+        pred_landmark = self.model.predict(img_batch, batch_size=1, verbose=verbose)
+        return pred_landmark
 
     def normalize_img_batch(self, imgs):
         image_batch = np.array(imgs, dtype=np.float32)
