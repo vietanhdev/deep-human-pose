@@ -1,6 +1,6 @@
 {
     "model" : {
-        "backbond":                    "EFFICIENT_NET_B2",
+        "backbond":                    "SHUFFLE_NET_V2",
         "im_width":                    224,
         "im_height":                   224
     },
@@ -14,18 +14,18 @@
         "val_batch_size":               8,
         "nb_epochs":                    150,
         "debug":                        true,
-        "model_folder" :                "./efficientnetb2_2head/",
-        "model_base_name":              "efficientnetb2_2head",
+        "model_folder" :                "./shufflenetv2_2head/",
+        "model_base_name":              "shufflenetv2_2head",
         "load_weights":                 false,
         "pretrained_weights_path":      "models/model_to_load.h5",
-        "logs_dir" :                    "logs_efficientnetb2_2head",
+        "logs_dir" :                    "logs_shufflenetv2_2head",
         "learning_rate":                1e-5,
         "loss_weights":                 null,
         "loss_func":                    "binary_crossentropy"
     },
 
     "test": {
-        "model_file" :                 "./efficientnetb2_2head/efficientnetb2_2head_ep020.h5",
+        "model_file" :                 "./shufflenetv2_2head/shufflenetv2_2head_ep020.h5",
         "test_data_folder":            "./data/3heads/images/",
         "test_labels":                 "./data/3heads/test.json",
         "test_batch_size":             64

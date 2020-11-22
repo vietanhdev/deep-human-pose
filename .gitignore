@@ -131,3 +131,4 @@ dmypy.json
 /efficientb3_*
 /efficientb4_*
 /efficientnetb2_*
+/shufflenetv2_2head
