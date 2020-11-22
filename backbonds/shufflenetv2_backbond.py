@@ -143,7 +143,7 @@ class ShuffleNetv2(tf.keras.Model):
         self.stage3 = ShufflenetStage(channels_per_stage[0], channels_per_stage[1], 8)
         self.stage4 = ShufflenetStage(channels_per_stage[1], channels_per_stage[2], 4)
         self.conv5_bn_relu = Conv2D_BN_ReLU(1024, 1, 1)
-        self.gap = GlobalAveragePooling2D()
+        
 
     def call(self, inputs, training=False):
         x = self.conv1_bn_relu(inputs, training=training)
@@ -152,5 +152,4 @@ class ShuffleNetv2(tf.keras.Model):
         x = self.stage3(x, training=training)
         x = self.stage4(x, training=training)
         x = self.conv5_bn_relu(x, training=training)
-        x = self.gap(x)
         return x

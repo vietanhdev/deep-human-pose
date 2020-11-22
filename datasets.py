@@ -15,7 +15,7 @@ from augmentation import augment_img
 
 class DataSequence(Sequence):
 
-    def __init__(self, image_folder, label_file, batch_size=8, input_size=(128, 128), shuffle=True, augment=False, random_flip=True, normalize=True):
+    def __init__(self, image_folder, label_file, batch_size=8, input_size=(224, 224), shuffle=True, augment=False, random_flip=True, normalize=True):
         """
         Keras Sequence object to train a model on larger-than-memory data.
         """
@@ -28,7 +28,9 @@ class DataSequence(Sequence):
         self.normalize = normalize
 
         with open(label_file, "r") as fp:
-            self.data = json.load(fp)["labels"]
+            data = json.load(fp)["labels"]
+            # Filter data not containing person
+            self.data = [d for d in data if d["contains_person"]]
 
         if shuffle:
             random.shuffle(self.data)
@@ -51,7 +53,6 @@ class DataSequence(Sequence):
 
         batch_image = []
         batch_landmark = []
-        batch_visibility = []
 
         for data in batch_data:
             
@@ -61,19 +62,15 @@ class DataSequence(Sequence):
             if self.random_flip and random.random() < 0.5:
                 flip = True
         
-            image, landmark, visibility = self.load_data(self.image_folder, data, augment=self.augment, flip=flip)
-
+            image, landmark = self.load_data(self.image_folder, data, augment=self.augment, flip=flip)
 
             batch_image.append(image)
             batch_landmark.append(landmark)
-            batch_visibility.append(visibility)
 
         batch_image = np.array(batch_image)
         batch_landmark = np.array(batch_landmark)
-        batch_landmark = batch_landmark.reshape(batch_landmark.shape[0], -1)
-        batch_visibility = np.array(batch_visibility)
 
-        return batch_image, [batch_landmark, batch_visibility]
+        return batch_image, batch_landmark
 
     def set_normalization(self, normalize):
         self.normalize = normalize
@@ -81,25 +78,23 @@ class DataSequence(Sequence):
     def load_data(self, img_folder, data, augment=False, flip=False):
 
         landmark = data["points"]
-        visibility = data["is_visible"]
-        img = cv2.imread(os.path.join(img_folder, data["image"]))
+        is_pushing_up = data["is_pushing_up"]
+        path = os.path.join(img_folder, data["image"])
+        img = cv2.imread(path)
         landmark = utils.normalize_landmark(landmark, (img.shape[1], img.shape[0]))
         img = cv2.resize(img, (self.input_size))
 
         if flip:
 
             # Flip landmark
-            landmark = np.multiply(landmark, np.array([-1, 1]))
+            landmark[:, 0] = 1 - landmark[:, 0]
 
             # Change the indices of landmark points and visibility
             l = landmark
-            v = visibility
             landmark = [l[6], l[5], l[4], l[3], l[2], l[1], l[0]]
-            visibility = [v[6], v[5], v[4], v[3], v[2], v[1], v[0]]
 
 
         unnomarlized_landmark = utils.unnormalize_landmark(landmark, self.input_size)
-
 
         if flip:
             img = cv2.flip(img, 1)
@@ -131,13 +126,15 @@ class DataSequence(Sequence):
         if self.normalize:
             img = img.astype(np.float, copy=False)
             img /= 255.
-            mean = [0.485, 0.456, 0.406]
-            std = [0.229, 0.224, 0.225]
-            img[..., 0] -= mean[0]
-            img[..., 1] -= mean[1]
-            img[..., 2] -= mean[2]
-            img[..., 0] /= std[0]
-            img[..., 1] /= std[1]
-            img[..., 2] /= std[2]
+            mean = np.array([0.485, 0.456, 0.406])
+            std = np.array([0.229, 0.224, 0.225])
+            img[..., :] -= mean
+            img[..., :] /= std
 
-        return img, landmark, visibility
+        flatten_landmark = []
+        for l in landmark:
+            flatten_landmark.append(l[0])
+            flatten_landmark.append(l[1])
+        flatten_landmark.append(int(is_pushing_up))
+
+        return img, flatten_landmark

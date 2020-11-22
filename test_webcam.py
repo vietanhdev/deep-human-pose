@@ -36,19 +36,40 @@ net = models.HeadPoseNet(config["model"]["im_width"], config["model"]
 # Load model
 net.load_weights(config["test"]["model_file"])
 
-cap = cv2.VideoCapture("/mnt/DATA/PUSHUP_PROJECT/processed/532.mp4")
+cap = cv2.VideoCapture("/mnt/DATA/PUSHUP_PROJECT/processed/200.mp4")
 if not cap.isOpened():
     print("Unable to connect to camera.")
     exit(-1)
 
+def preprocess_img(im, desired_size=800):
+    old_size = im.shape[:2] # old_size is in (height, width) format
+
+    ratio = float(desired_size)/max(old_size)
+    new_size = tuple([int(x*ratio) for x in old_size])
+
+    im = cv2.resize(im, (new_size[1], new_size[0]))
+
+    delta_w = desired_size - new_size[1]
+    delta_h = desired_size - new_size[0]
+    top, bottom = delta_h//2, delta_h-(delta_h//2)
+    left, right = delta_w//2, delta_w-(delta_w//2)
+
+    color = [0, 0, 0]
+    new_im = cv2.copyMakeBorder(im, top, bottom, left, right, cv2.BORDER_CONSTANT,
+        value=color)
+
+    return new_im
+
 while cap.isOpened():
     ret, origin_frame = cap.read()
+    origin_frame = preprocess_img(origin_frame)
     if ret:
+        
         # Convert crop image to RGB color space
         frame = cv2.cvtColor(origin_frame, cv2.COLOR_BGR2RGB)
         # frame = cv2.imread("/mnt/DATA/PUSHUP_PROJECT/deep-human-pose/data/mpii/processed_images/0.png")
         frame = cv2.resize(frame, (224, 224))
-        batch_landmark, batch_visibility = net.predict_batch(np.array([frame]))
+        batch_landmark, batch_is_pushing_up, batch_contains_person = net.predict_batch(np.array([frame]))
 
         net_input_size = (config["model"]["im_width"], config["model"]["im_height"])
         scale = np.divide(np.array([origin_frame.shape[1], origin_frame.shape[0]]), np.array(net_input_size))
@@ -56,18 +77,10 @@ while cap.isOpened():
         draw = origin_frame.copy()
 
         landmark = batch_landmark[0]
-        # landmark = landmark.reshape((7, 2))
+        is_pushing_up = batch_is_pushing_up[0]
+        contains_person = batch_contains_person[0]
 
-
-        # unnormalize_landmark = utils.unnormalize_landmark(landmark, (origin_frame.shape[1], origin_frame.shape[0]))
-        # for i in range(len(unnormalize_landmark)):
-        #     x = int(unnormalize_landmark[i][0])
-        #     y = int(unnormalize_landmark[i][1])
-
-        #     draw = cv2.putText(draw, str(i), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX,  
-        #             0.5, (255, 255, 255), 1, cv2.LINE_AA)
-        #     cv2.circle(draw, (int(x), int(y)), 3, (0,0,255))
-
+        points = []
         for j in range(7):
             x = landmark[2 * j]
             y = landmark[2 * j + 1]
@@ -75,7 +88,15 @@ while cap.isOpened():
                 (x, y), net_input_size, scale=scale)
             x = int(x)
             y = int(y)
-            draw = cv2.circle(draw, (x, y), 2, (255, 0, 0), 2)
+            points.append([x, y])
+            draw = cv2.circle(draw, (x, y), 4, (0, 255, 0), -1)
+            cv2.putText(draw, 'Pushing:{}, Person:{}'.format(is_pushing_up, contains_person), (100, 100), cv2.FONT_HERSHEY_SIMPLEX ,  
+                   0.5, (0, 0, 255), 1, cv2.LINE_AA) 
+
+
+        pts = np.array(points, np.int32)
+        pts = pts.reshape((-1,1,2))
+        cv2.polylines(draw, [pts], True, (0,0,255), 3)
 
 
         cv2.imshow("Result", draw)
