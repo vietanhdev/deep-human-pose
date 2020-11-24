@@ -25,9 +25,9 @@
     },
 
     "test": {
-        "model_file" :                 "",
+        "model_file" :                 "efficientnetb2_2head_angle/efficientnetb2_2head_angle_ep032.h5",
         "test_data_folder":            "./data/3heads/images/",
         "test_labels":                 "./data/3heads/test.json",
-        "test_batch_size":             8
+        "test_batch_size":             64
     }
 }
