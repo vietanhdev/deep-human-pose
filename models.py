@@ -29,9 +29,9 @@ class HeadPoseNet:
     def __create_model(self):
         inputs = tf.keras.layers.Input(shape=(self.im_height, self.im_width, 3))
 
-        if self.backbond == "SHUFFLE_NET_V2":
+        if self.backbond == "MOBILENET_V2":
             feature = MobileNetV2(input_shape=(224, 224, 3), weights="imagenet", include_top=False)(inputs)
-            feature = tf.keras.layers.Flatten()(feature)
+            feature = tf.keras.layers.GlobalAveragePooling2D()(feature)
             feature = tf.keras.layers.Dropout(0.5)(feature)
             feature = tf.keras.layers.Dense(256, activation='relu')(feature)
             feature = tf.keras.layers.Dropout(0.2)(feature)
