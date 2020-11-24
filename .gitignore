@@ -116,15 +116,11 @@ dmypy.json
 # Log folder
 /logs*
 
-# Model folder
-/models*
-!/models/.gitkeep
-
 # Test results
 /test_result
 
 # Trained models
-/trained
+/trained_models
 
 /videos
 /labels.json

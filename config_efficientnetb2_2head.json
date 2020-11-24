@@ -25,7 +25,7 @@
     },
 
     "test": {
-        "model_file" :                 "./efficientnetb2_2head/efficientnetb2_2head_ep020.h5",
+        "model_file" :                 "efficientnetb2_2head/efficientnetb2_2head_ep060.h5",
         "test_data_folder":            "./data/3heads/images/",
         "test_labels":                 "./data/3heads/test.json",
         "test_batch_size":             64
